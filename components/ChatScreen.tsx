@@ -3,8 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import type { ChatMessage, ConversationState, Persona } from "@/lib/types";
 import { loadConversation, saveConversation, clearConversation } from "@/lib/storage";
+import { useAvatar } from "@/lib/useAvatar";
 import MessageBubble from "./MessageBubble";
 import AffectionBar from "./AffectionBar";
+import AvatarImage from "./AvatarImage";
+import VideoCallScreen from "./VideoCallScreen";
 
 function newId() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -39,7 +42,11 @@ export default function ChatScreen({
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
+  const [callMode, setCallMode] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { avatarUrl, isGenerating: isGeneratingAvatar, generate: generateAvatar } = useAvatar(
+    persona.id
+  );
 
   useEffect(() => {
     saveConversation(state);
@@ -49,8 +56,8 @@ export default function ChatScreen({
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [state.messages, isSending]);
 
-  async function handleSend() {
-    const text = input.trim();
+  async function handleSend(overrideText?: string) {
+    const text = (overrideText ?? input).trim();
     if (!text || isSending) return;
 
     const userMessage: ChatMessage = {
@@ -108,6 +115,21 @@ export default function ChatScreen({
     setState(initialState(persona));
   }
 
+  if (callMode) {
+    return (
+      <VideoCallScreen
+        persona={persona}
+        avatarUrl={avatarUrl}
+        isGeneratingAvatar={isGeneratingAvatar}
+        onGenerateAvatar={generateAvatar}
+        messages={state.messages}
+        isSending={isSending}
+        onSend={(text) => handleSend(text)}
+        onEndCall={() => setCallMode(false)}
+      />
+    );
+  }
+
   return (
     <div className="flex flex-1 flex-col h-dvh bg-zinc-50 dark:bg-black">
       <header className="flex items-center gap-3 border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur px-4 py-3">
@@ -118,11 +140,12 @@ export default function ChatScreen({
         >
           ←
         </button>
-        <div
-          className={`shrink-0 h-9 w-9 rounded-full bg-gradient-to-br ${persona.gradient} flex items-center justify-center text-lg`}
-        >
-          {persona.avatarEmoji}
-        </div>
+        <AvatarImage
+          persona={persona}
+          avatarUrl={avatarUrl}
+          className="shrink-0 h-9 w-9 rounded-full"
+          emojiClassName="text-lg"
+        />
         <div className="flex-1 min-w-0">
           <div className="font-semibold text-sm text-zinc-900 dark:text-zinc-50">
             {persona.name}
@@ -131,6 +154,14 @@ export default function ChatScreen({
             <AffectionBar affection={state.affection} />
           </div>
         </div>
+        <button
+          onClick={() => setCallMode(true)}
+          className="shrink-0 h-9 w-9 flex items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+          aria-label="영상통화"
+          title="영상통화"
+        >
+          📹
+        </button>
         <button
           onClick={handleReset}
           className="shrink-0 text-xs text-zinc-400 hover:text-rose-500 transition-colors"
@@ -141,7 +172,7 @@ export default function ChatScreen({
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
         {state.messages.map((message) => (
-          <MessageBubble key={message.id} message={message} persona={persona} />
+          <MessageBubble key={message.id} message={message} persona={persona} avatarUrl={avatarUrl} />
         ))}
         {isSending && (
           <div className="flex items-center gap-2 text-xs text-zinc-400 pl-10">
@@ -173,7 +204,7 @@ export default function ChatScreen({
             className="flex-1 rounded-full border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-900 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-rose-300 dark:focus:ring-rose-500/50 text-zinc-900 dark:text-zinc-100"
           />
           <button
-            onClick={handleSend}
+            onClick={() => handleSend()}
             disabled={isSending || !input.trim()}
             className="shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 text-white flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
             aria-label="전송"

@@ -1,11 +1,14 @@
 import type { ChatMessage, Persona } from "@/lib/types";
+import AvatarImage from "./AvatarImage";
 
 export default function MessageBubble({
   message,
   persona,
+  avatarUrl,
 }: {
   message: ChatMessage;
   persona: Persona;
+  avatarUrl: string | null;
 }) {
   const isUser = message.role === "user";
 
@@ -13,11 +16,12 @@ export default function MessageBubble({
     <div className={`flex w-full ${isUser ? "justify-end" : "justify-start"}`}>
       <div className={`flex items-end gap-2 max-w-[80%] ${isUser ? "flex-row-reverse" : ""}`}>
         {!isUser && (
-          <div
-            className={`shrink-0 h-8 w-8 rounded-full bg-gradient-to-br ${persona.gradient} flex items-center justify-center text-sm`}
-          >
-            {persona.avatarEmoji}
-          </div>
+          <AvatarImage
+            persona={persona}
+            avatarUrl={avatarUrl}
+            className="shrink-0 h-8 w-8 rounded-full"
+            emojiClassName="text-sm"
+          />
         )}
         <div
           className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words ${

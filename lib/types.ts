@@ -17,6 +17,7 @@ export interface Persona {
   speechStyle: string;
   greeting: string;
   systemPrompt: string;
+  avatarPrompt: string;
 }
 
 export interface AffectionStage {

@@ -1,5 +1,6 @@
 import { PERSONAS } from "@/lib/personas";
 import type { Persona } from "@/lib/types";
+import PersonaCard from "./PersonaCard";
 
 export default function PersonaSelect({
   onSelect,
@@ -19,39 +20,14 @@ export default function PersonaSelect({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-2xl">
         {PERSONAS.map((persona) => (
-          <button
-            key={persona.id}
-            onClick={() => onSelect(persona)}
-            className="group text-left rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-900/60 p-5 hover:border-rose-300 dark:hover:border-rose-500/50 hover:shadow-lg transition-all duration-200"
-          >
-            <div className="flex items-center gap-3 mb-3">
-              <div
-                className={`h-12 w-12 shrink-0 rounded-full bg-gradient-to-br ${persona.gradient} flex items-center justify-center text-2xl shadow-inner`}
-              >
-                {persona.avatarEmoji}
-              </div>
-              <div>
-                <div className="font-semibold text-zinc-900 dark:text-zinc-50">
-                  {persona.name}
-                </div>
-                <div className="text-xs text-zinc-500 dark:text-zinc-400">
-                  {persona.tagline}
-                </div>
-              </div>
-            </div>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              {persona.description}
-            </p>
-            <div className="mt-4 text-xs font-medium text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity">
-              대화 시작하기 →
-            </div>
-          </button>
+          <PersonaCard key={persona.id} persona={persona} onSelect={onSelect} />
         ))}
       </div>
 
       <p className="mt-10 max-w-md text-center text-[11px] leading-relaxed text-zinc-400 dark:text-zinc-600">
         디스키온 Love는 AI가 생성하는 가상의 캐릭터와의 대화 서비스입니다.
-        실제 인물이 아니며, 건전한 대화를 지향합니다.
+        실제 인물이 아니며, 건전한 대화를 지향합니다. 프로필 사진은 AI로 생성된
+        가상의 이미지입니다.
       </p>
     </div>
   );

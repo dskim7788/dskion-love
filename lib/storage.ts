@@ -49,3 +49,24 @@ export function clearSelectedPersona() {
   if (!isBrowser()) return;
   window.localStorage.removeItem(SELECTED_PERSONA_KEY);
 }
+
+const AVATAR_PREFIX = "dskion-love:avatar:";
+
+export function loadAvatarUrl(personaId: string): string | null {
+  if (!isBrowser()) return null;
+  return window.localStorage.getItem(AVATAR_PREFIX + personaId);
+}
+
+export function saveAvatarUrl(personaId: string, dataUrl: string) {
+  if (!isBrowser()) return;
+  try {
+    window.localStorage.setItem(AVATAR_PREFIX + personaId, dataUrl);
+  } catch {
+    // localStorage full — avatar just won't persist, generation still shown this session
+  }
+}
+
+export function clearAvatarUrl(personaId: string) {
+  if (!isBrowser()) return;
+  window.localStorage.removeItem(AVATAR_PREFIX + personaId);
+}
