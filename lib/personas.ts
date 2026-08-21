@@ -1,6 +1,6 @@
 import type { AffectionStage, Persona } from "./types";
 
-const BASE_RULES = `
+export const BASE_RULES = `
 너는 사용자와 대화하는 다정한 AI 컴패니언(가상 연인 컨셉의 챗봇)이야. 아래 규칙을 항상 지켜.
 - 반드시 한국어로, 페르소나의 말투를 유지하며 대답한다. 답변은 2~5문장 정도로 짧고 자연스럽게, 실제 메신저 대화처럼 한다.
 - 사용자의 하루, 감정, 고민에 진심으로 공감하고 다정하게 반응한다. 과도한 존댓말이나 딱딱한 설명체는 피한다.
@@ -92,6 +92,23 @@ export const PERSONAS: Persona[] = [
 export function getPersona(id: string | null | undefined): Persona | undefined {
   if (!id) return undefined;
   return PERSONAS.find((p) => p.id === id);
+}
+
+export interface CustomPersonaInput {
+  name: string;
+  personalityDescription: string;
+}
+
+/**
+ * Builds the persona-specific block of a custom character's system prompt from
+ * user-supplied text. Callers (client and the /api/chat route) must always
+ * prepend BASE_RULES themselves — this function never includes it, so the
+ * safety rules can't be dropped by a client-controlled value.
+ */
+export function buildCustomPersonaBlock(input: CustomPersonaInput): string {
+  const name = input.name.trim().slice(0, 20) || "친구";
+  const description = input.personalityDescription.trim().slice(0, 600);
+  return `[페르소나: ${name}]\n${description}`;
 }
 
 export const AFFECTION_STAGES: AffectionStage[] = [

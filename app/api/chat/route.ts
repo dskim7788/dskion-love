@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
-import { getPersona, getAffectionStage } from "@/lib/personas";
+import { getPersona, getAffectionStage, BASE_RULES, buildCustomPersonaBlock } from "@/lib/personas";
 
 export const runtime = "nodejs";
 
@@ -8,6 +8,7 @@ interface ChatRequestBody {
   personaId: string;
   affection: number;
   messages: { role: "user" | "assistant"; content: string }[];
+  customPersona?: { name: string; personalityDescription: string };
 }
 
 const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
@@ -24,8 +25,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "잘못된 요청이야." }, { status: 400 });
   }
 
-  const persona = getPersona(body.personaId);
-  if (!persona) {
+  const builtInPersona = getPersona(body.personaId);
+  let personaSystemPrompt: string;
+
+  if (builtInPersona) {
+    personaSystemPrompt = builtInPersona.systemPrompt;
+  } else if (body.customPersona?.name && body.customPersona?.personalityDescription) {
+    // BASE_RULES always comes from server-side code, never from the client,
+    // so a custom persona can never override the safety rules.
+    personaSystemPrompt = `${BASE_RULES}\n\n${buildCustomPersonaBlock(body.customPersona)}`;
+  } else {
     return NextResponse.json({ error: "존재하지 않는 캐릭터야." }, { status: 400 });
   }
 
@@ -42,7 +51,7 @@ export async function POST(request: Request) {
 
   const client = new Anthropic({ apiKey });
 
-  const systemPrompt = `${persona.systemPrompt}
+  const systemPrompt = `${personaSystemPrompt}
 
 [현재 호감도 단계: ${stage.label} (${affection}/100)]
 이 단계에 어울리는 친밀도로 대화해. 단계가 낮을수록 약간 조심스럽고 예의를 갖추고, 단계가 높을수록 더 편안하고 다정하게 대해.`;

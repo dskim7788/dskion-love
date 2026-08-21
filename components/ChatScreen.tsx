@@ -45,7 +45,8 @@ export default function ChatScreen({
   const [callMode, setCallMode] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { avatarUrl, isGenerating: isGeneratingAvatar, generate: generateAvatar } = useAvatar(
-    persona.id
+    persona.id,
+    persona.isCustom ? persona.avatarPrompt : undefined
   );
 
   useEffect(() => {
@@ -81,6 +82,9 @@ export default function ChatScreen({
           personaId: persona.id,
           affection: state.affection,
           messages: nextMessages.map((m) => ({ role: m.role, content: m.content })),
+          customPersona: persona.isCustom
+            ? { name: persona.name, personalityDescription: persona.personalityDescription ?? "" }
+            : undefined,
         }),
       });
 
