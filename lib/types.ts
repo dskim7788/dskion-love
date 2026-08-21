@@ -18,6 +18,7 @@ export interface Persona {
   greeting: string;
   systemPrompt: string;
   avatarPrompt: string;
+  welcomeBackLines: string[];
   isCustom?: boolean;
   personalityDescription?: string;
 }

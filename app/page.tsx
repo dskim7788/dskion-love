@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { Persona } from "@/lib/types";
 import { PERSONAS, getPersona } from "@/lib/personas";
 import { getSelectedPersonaId, setSelectedPersonaId, clearSelectedPersona } from "@/lib/storage";
+import { registerVisit } from "@/lib/streak";
 import {
   loadCustomPersonas,
   addCustomPersona,
@@ -17,6 +18,7 @@ export default function Home() {
   const [persona, setPersona] = useState<Persona | null | undefined>(undefined);
   const [customPersonas, setCustomPersonas] = useState<Persona[]>([]);
   const [showCreate, setShowCreate] = useState(false);
+  const [streak, setStreak] = useState(0);
 
   useEffect(() => {
     const custom = loadCustomPersonas();
@@ -25,6 +27,7 @@ export default function Home() {
     const savedId = getSelectedPersonaId();
     const found = getPersona(savedId) ?? custom.find((p) => p.id === savedId) ?? null;
     setPersona(found);
+    setStreak(registerVisit().streak);
   }, []);
 
   function handleSelect(p: Persona) {
@@ -65,6 +68,7 @@ export default function Home() {
         onSelect={handleSelect}
         onCreateNew={() => setShowCreate(true)}
         onDelete={handleDelete}
+        streak={streak}
       />
     );
   }

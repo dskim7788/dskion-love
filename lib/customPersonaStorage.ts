@@ -40,6 +40,7 @@ export function buildCustomPersona(form: CreatePersonaForm): Persona {
     avatarPrompt:
       form.appearanceDescription.trim().slice(0, 300) ||
       `friendly person named ${name}, warm expression, portrait photo`,
+    welcomeBackLines: [`오랜만이야! 나 ${name}, 계속 기다렸어.`],
     systemPrompt: `${BASE_RULES}\n\n${personaBlock}`,
     isCustom: true,
     personalityDescription,
