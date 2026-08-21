@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { loadAvatarUrl, saveAvatarUrl } from "./storage";
 
-export function useAvatar(personaId: string) {
+export function useAvatar(personaId: string, customAvatarPrompt?: string) {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +19,10 @@ export function useAvatar(personaId: string) {
       const res = await fetch("/api/generate-avatar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ personaId }),
+        body: JSON.stringify({
+          personaId,
+          customPersona: customAvatarPrompt ? { avatarPrompt: customAvatarPrompt } : undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -32,7 +35,7 @@ export function useAvatar(personaId: string) {
     } finally {
       setIsGenerating(false);
     }
-  }, [personaId]);
+  }, [personaId, customAvatarPrompt]);
 
   return { avatarUrl, isGenerating, error, generate };
 }

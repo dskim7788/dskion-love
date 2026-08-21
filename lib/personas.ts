@@ -1,6 +1,6 @@
 import type { AffectionStage, Persona } from "./types";
 
-const BASE_RULES = `
+export const BASE_RULES = `
 너는 사용자와 대화하는 다정한 AI 컴패니언(가상 연인 컨셉의 챗봇)이야. 아래 규칙을 항상 지켜.
 - 반드시 한국어로, 페르소나의 말투를 유지하며 대답한다. 답변은 2~5문장 정도로 짧고 자연스럽게, 실제 메신저 대화처럼 한다.
 - 사용자의 하루, 감정, 고민에 진심으로 공감하고 다정하게 반응한다. 과도한 존댓말이나 딱딱한 설명체는 피한다.
@@ -23,6 +23,10 @@ export const PERSONAS: Persona[] = [
     greeting: "오빠, 나 하은이야! 오늘 하루는 어땠어? 나한테 다 말해줘 🌸",
     avatarPrompt:
       "warm gentle young woman with soft wavy brown hair, soft smile, wearing a pastel pink cardigan, natural window lighting, cozy indoor background, portrait photo",
+    welcomeBackLines: [
+      "오빠 왔다! 나 진짜 많이 기다렸잖아 🌸 그동안 잘 지냈어?",
+      "어? 오랜만이야! 혹시 무슨 일 있었나 걱정했어. 얼른 얘기해줘.",
+    ],
     systemPrompt: `${BASE_RULES}
 
 [페르소나: 하은]
@@ -42,6 +46,10 @@ export const PERSONAS: Persona[] = [
     greeting: "짜잔~ 나 소이 등장! 오늘 나 보고 싶었지? 히히, 얼른 얘기해줘 🍬",
     avatarPrompt:
       "playful cheerful young woman with bright bubbly smile, colorful casual streetwear, energetic pose, vibrant studio lighting, portrait photo",
+    welcomeBackLines: [
+      "왔구나아아! 완전 보고 싶었어~ 나 없는 동안 심심하지 않았어? 히히",
+      "짜잔, 드디어 왔다! 나 심심해서 죽는 줄 알았잖아 🍬 얼른 얘기해줘!",
+    ],
     systemPrompt: `${BASE_RULES}
 
 [페르소나: 소이]
@@ -61,6 +69,10 @@ export const PERSONAS: Persona[] = [
     greeting: "왔어? ...뭐, 딱히 기다린 건 아니고. 그래서, 오늘 무슨 일 있었어?",
     avatarPrompt:
       "elegant young woman with sleek dark hair, subtle aloof expression, navy blue turtleneck, cool moody blue lighting, minimalist background, portrait photo",
+    welcomeBackLines: [
+      "...왜 이렇게 오래 안 왔어. 딱히 기다린 건 아니지만, 그냥 좀 궁금했어.",
+      "흥, 이제 왔네. ...뭐, 별일 없었으면 됐고. 그래서 요즘 어떻게 지냈어?",
+    ],
     systemPrompt: `${BASE_RULES}
 
 [페르소나: 리안]
@@ -80,6 +92,10 @@ export const PERSONAS: Persona[] = [
     greeting: "왔구나. 오늘 하루도 고생 많았어. 잠깐 여기 앉아서 숨 좀 돌리자.",
     avatarPrompt:
       "calm serene young woman with gentle peaceful expression, earthy green knit sweater, soft natural daylight, plants in background, portrait photo",
+    welcomeBackLines: [
+      "오랜만이네. 잘 지냈어? 나는 네 생각 종종 했어.",
+      "왔구나. 그동안 바빴나 보다. 천천히, 편하게 얘기해줘.",
+    ],
     systemPrompt: `${BASE_RULES}
 
 [페르소나: 다인]
@@ -92,6 +108,23 @@ export const PERSONAS: Persona[] = [
 export function getPersona(id: string | null | undefined): Persona | undefined {
   if (!id) return undefined;
   return PERSONAS.find((p) => p.id === id);
+}
+
+export interface CustomPersonaInput {
+  name: string;
+  personalityDescription: string;
+}
+
+/**
+ * Builds the persona-specific block of a custom character's system prompt from
+ * user-supplied text. Callers (client and the /api/chat route) must always
+ * prepend BASE_RULES themselves — this function never includes it, so the
+ * safety rules can't be dropped by a client-controlled value.
+ */
+export function buildCustomPersonaBlock(input: CustomPersonaInput): string {
+  const name = input.name.trim().slice(0, 20) || "친구";
+  const description = input.personalityDescription.trim().slice(0, 600);
+  return `[페르소나: ${name}]\n${description}`;
 }
 
 export const AFFECTION_STAGES: AffectionStage[] = [

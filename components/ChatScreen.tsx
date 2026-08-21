@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ChatMessage, ConversationState, Persona } from "@/lib/types";
 import { loadConversation, saveConversation, clearConversation } from "@/lib/storage";
 import { useAvatar } from "@/lib/useAvatar";
+import { typingDelayMs } from "@/lib/format";
 import MessageBubble from "./MessageBubble";
 import AffectionBar from "./AffectionBar";
 import AvatarImage from "./AvatarImage";
@@ -29,6 +30,31 @@ function initialState(persona: Persona): ConversationState {
   };
 }
 
+const STALE_MS = 12 * 60 * 60 * 1000;
+
+function withWelcomeBack(loaded: ConversationState, persona: Persona): ConversationState {
+  if (!loaded.lastInteractionAt) return loaded;
+  if (Date.now() - loaded.lastInteractionAt < STALE_MS) return loaded;
+
+  const line =
+    persona.welcomeBackLines[Math.floor(Math.random() * persona.welcomeBackLines.length)];
+
+  return {
+    ...loaded,
+    affection: Math.min(100, loaded.affection + 2),
+    lastInteractionAt: Date.now(),
+    messages: [
+      ...loaded.messages,
+      {
+        id: newId(),
+        role: "assistant",
+        content: line,
+        createdAt: Date.now(),
+      },
+    ],
+  };
+}
+
 export default function ChatScreen({
   persona,
   onBack,
@@ -37,15 +63,18 @@ export default function ChatScreen({
   onBack: () => void;
 }) {
   const [state, setState] = useState<ConversationState>(() => {
-    return loadConversation(persona.id) ?? initialState(persona);
+    const loaded = loadConversation(persona.id);
+    return loaded ? withWelcomeBack(loaded, persona) : initialState(persona);
   });
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
+  const [lastFailedText, setLastFailedText] = useState<string | null>(null);
   const [callMode, setCallMode] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { avatarUrl, isGenerating: isGeneratingAvatar, generate: generateAvatar } = useAvatar(
-    persona.id
+    persona.id,
+    persona.isCustom ? persona.avatarPrompt : undefined
   );
 
   useEffect(() => {
@@ -72,6 +101,7 @@ export default function ChatScreen({
     setInput("");
     setIsSending(true);
     setErrorText(null);
+    setLastFailedText(null);
 
     try {
       const res = await fetch("/api/chat", {
@@ -81,6 +111,9 @@ export default function ChatScreen({
           personaId: persona.id,
           affection: state.affection,
           messages: nextMessages.map((m) => ({ role: m.role, content: m.content })),
+          customPersona: persona.isCustom
+            ? { name: persona.name, personalityDescription: persona.personalityDescription ?? "" }
+            : undefined,
         }),
       });
 
@@ -88,6 +121,9 @@ export default function ChatScreen({
       if (!res.ok) {
         throw new Error(data.error || "응답을 받지 못했어");
       }
+
+      // A short human-like pause before the reply appears, scaled to its length.
+      await new Promise((resolve) => setTimeout(resolve, typingDelayMs(data.reply.length)));
 
       const assistantMessage: ChatMessage = {
         id: newId(),
@@ -104,9 +140,15 @@ export default function ChatScreen({
       }));
     } catch (err) {
       setErrorText(err instanceof Error ? err.message : "알 수 없는 오류가 발생했어");
+      setLastFailedText(text);
     } finally {
       setIsSending(false);
     }
+  }
+
+  function handleRetry() {
+    if (!lastFailedText) return;
+    handleSend(lastFailedText);
   }
 
   function handleReset() {
@@ -126,6 +168,7 @@ export default function ChatScreen({
         isSending={isSending}
         onSend={(text) => handleSend(text)}
         onEndCall={() => setCallMode(false)}
+        affection={state.affection}
       />
     );
   }
@@ -185,7 +228,17 @@ export default function ChatScreen({
           </div>
         )}
         {errorText && (
-          <p className="text-center text-xs text-rose-500">{errorText}</p>
+          <div className="flex flex-col items-center gap-2 text-center">
+            <p className="text-xs text-rose-500">{errorText}</p>
+            {lastFailedText && (
+              <button
+                onClick={handleRetry}
+                className="text-xs font-medium text-rose-500 hover:text-rose-600 underline underline-offset-2"
+              >
+                다시 시도
+              </button>
+            )}
+          </div>
         )}
       </div>
 

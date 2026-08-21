@@ -7,11 +7,16 @@ import AvatarImage from "./AvatarImage";
 export default function PersonaCard({
   persona,
   onSelect,
+  onDelete,
 }: {
   persona: Persona;
   onSelect: (persona: Persona) => void;
+  onDelete?: (persona: Persona) => void;
 }) {
-  const { avatarUrl, isGenerating, error, generate } = useAvatar(persona.id);
+  const { avatarUrl, isGenerating, error, generate } = useAvatar(
+    persona.id,
+    persona.isCustom ? persona.avatarPrompt : undefined
+  );
 
   return (
     <div
@@ -52,8 +57,21 @@ export default function PersonaCard({
         {persona.description}
       </p>
       {error && <p className="mt-2 text-[11px] text-rose-500">{error}</p>}
-      <div className="mt-4 text-xs font-medium text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity">
-        대화 시작하기 →
+      <div className="mt-4 flex items-center justify-between">
+        <span className="text-xs font-medium text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity">
+          대화 시작하기 →
+        </span>
+        {persona.isCustom && onDelete && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(persona);
+            }}
+            className="text-xs text-zinc-400 hover:text-rose-500 transition-colors"
+          >
+            삭제
+          </button>
+        )}
       </div>
     </div>
   );
