@@ -1,0 +1,52 @@
+# 디스키온 Love
+
+매일 대화하고 싶은 나만의 AI 컴패니언 채팅 앱입니다. 캐릭터(페르소나)를 고르고, 대화를 나누며 호감도를 쌓아가는 형태의 웹앱입니다.
+
+## 주요 기능
+
+- **캐릭터 선택**: 성격이 다른 4명의 AI 컴패니언(하은, 소이, 리안, 다인) 중 선택
+- **실시간 채팅**: Claude API를 활용한 페르소나 기반 대화
+- **호감도 시스템**: 대화를 나눌수록 호감도가 올라가고, 단계(처음 만남 → 친해지는 중 → 썸타는 사이 → 연인 → 찐사랑)에 따라 대화 분위기가 달라짐
+- **대화 저장**: 브라우저 로컬스토리지에 캐릭터별 대화 기록과 호감도가 저장되어 새로고침해도 유지됨
+- **데모 모드**: `ANTHROPIC_API_KEY`가 없어도 데모 응답으로 UI/흐름을 바로 확인 가능
+
+## 기술 스택
+
+- Next.js 16 (App Router) + TypeScript
+- Tailwind CSS 4
+- Anthropic SDK (`@anthropic-ai/sdk`)
+
+## 시작하기
+
+```bash
+npm install
+cp .env.example .env.local
+# .env.local 에 ANTHROPIC_API_KEY 입력 (없어도 데모 응답으로 동작)
+npm run dev
+```
+
+브라우저에서 [http://localhost:3000](http://localhost:3000) 접속.
+
+## 프로젝트 구조
+
+```
+dskion-love/
+├── app/
+│   ├── page.tsx           # 캐릭터 선택 / 채팅 화면 전환
+│   ├── layout.tsx
+│   └── api/chat/route.ts  # Claude API 연동 채팅 엔드포인트
+├── components/
+│   ├── PersonaSelect.tsx  # 캐릭터 선택 화면
+│   ├── ChatScreen.tsx     # 채팅 화면
+│   ├── MessageBubble.tsx
+│   └── AffectionBar.tsx   # 호감도 게이지
+├── lib/
+│   ├── personas.ts        # 캐릭터 정의 및 시스템 프롬프트
+│   ├── storage.ts         # 로컬스토리지 저장/로드
+│   └── types.ts
+└── .env.example
+```
+
+## 안전 가이드라인
+
+이 앱의 시스템 프롬프트는 선정적/노골적인 성적 표현, 미성년자 관련 콘텐츠, 폭력적/불법적 내용을 생성하지 않도록 명시적으로 제한되어 있습니다. 다정한 대화 상대로서 건전한 컴패니언 경험을 제공하는 것을 목표로 합니다.
