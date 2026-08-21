@@ -30,6 +30,31 @@ function initialState(persona: Persona): ConversationState {
   };
 }
 
+const STALE_MS = 12 * 60 * 60 * 1000;
+
+function withWelcomeBack(loaded: ConversationState, persona: Persona): ConversationState {
+  if (!loaded.lastInteractionAt) return loaded;
+  if (Date.now() - loaded.lastInteractionAt < STALE_MS) return loaded;
+
+  const line =
+    persona.welcomeBackLines[Math.floor(Math.random() * persona.welcomeBackLines.length)];
+
+  return {
+    ...loaded,
+    affection: Math.min(100, loaded.affection + 2),
+    lastInteractionAt: Date.now(),
+    messages: [
+      ...loaded.messages,
+      {
+        id: newId(),
+        role: "assistant",
+        content: line,
+        createdAt: Date.now(),
+      },
+    ],
+  };
+}
+
 export default function ChatScreen({
   persona,
   onBack,
@@ -38,7 +63,8 @@ export default function ChatScreen({
   onBack: () => void;
 }) {
   const [state, setState] = useState<ConversationState>(() => {
-    return loadConversation(persona.id) ?? initialState(persona);
+    const loaded = loadConversation(persona.id);
+    return loaded ? withWelcomeBack(loaded, persona) : initialState(persona);
   });
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
