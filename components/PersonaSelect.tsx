@@ -1,12 +1,17 @@
-import { PERSONAS } from "@/lib/personas";
 import type { Persona } from "@/lib/types";
 import PersonaCard from "./PersonaCard";
 
 export default function PersonaSelect({
+  personas,
   onSelect,
+  onCreateNew,
+  onDelete,
   streak,
 }: {
+  personas: Persona[];
   onSelect: (persona: Persona) => void;
+  onCreateNew: () => void;
+  onDelete: (persona: Persona) => void;
   streak?: number;
 }) {
   return (
@@ -26,9 +31,17 @@ export default function PersonaSelect({
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-2xl">
-        {PERSONAS.map((persona) => (
-          <PersonaCard key={persona.id} persona={persona} onSelect={onSelect} />
+        {personas.map((persona) => (
+          <PersonaCard key={persona.id} persona={persona} onSelect={onSelect} onDelete={onDelete} />
         ))}
+
+        <button
+          onClick={onCreateNew}
+          className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-zinc-300 dark:border-zinc-700 text-zinc-400 dark:text-zinc-500 hover:border-rose-300 dark:hover:border-rose-500/50 hover:text-rose-500 transition-colors p-5 min-h-[9rem]"
+        >
+          <span className="text-2xl">＋</span>
+          <span className="text-sm font-medium">나만의 캐릭터 만들기</span>
+        </button>
       </div>
 
       <p className="mt-10 max-w-md text-center text-[11px] leading-relaxed text-zinc-400 dark:text-zinc-600">

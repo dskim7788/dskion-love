@@ -11,15 +11,16 @@ const NEGATIVE_PROMPT =
   "nsfw, nudity, explicit, sexual, underage, child, low quality, deformed, extra limbs, watermark, text";
 
 export async function POST(request: Request) {
-  let body: { personaId?: string };
+  let body: { personaId?: string; customPersona?: { avatarPrompt: string } };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "잘못된 요청이야." }, { status: 400 });
   }
 
-  const persona = getPersona(body.personaId);
-  if (!persona) {
+  const builtInPersona = getPersona(body.personaId);
+  const avatarPrompt = builtInPersona?.avatarPrompt ?? body.customPersona?.avatarPrompt;
+  if (!avatarPrompt) {
     return NextResponse.json({ error: "존재하지 않는 캐릭터야." }, { status: 400 });
   }
 
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
         },
         body: JSON.stringify({
           input: {
-            prompt: persona.avatarPrompt + SAFETY_SUFFIX,
+            prompt: avatarPrompt + SAFETY_SUFFIX,
             negative_prompt: NEGATIVE_PROMPT,
             aspect_ratio: "3:4",
             num_outputs: 1,

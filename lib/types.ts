@@ -19,6 +19,8 @@ export interface Persona {
   systemPrompt: string;
   avatarPrompt: string;
   welcomeBackLines: string[];
+  isCustom?: boolean;
+  personalityDescription?: string;
 }
 
 export interface AffectionStage {
