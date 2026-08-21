@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ChatMessage, ConversationState, Persona } from "@/lib/types";
 import { loadConversation, saveConversation, clearConversation } from "@/lib/storage";
 import { useAvatar } from "@/lib/useAvatar";
+import { typingDelayMs } from "@/lib/format";
 import MessageBubble from "./MessageBubble";
 import AffectionBar from "./AffectionBar";
 import AvatarImage from "./AvatarImage";
@@ -68,6 +69,7 @@ export default function ChatScreen({
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
+  const [lastFailedText, setLastFailedText] = useState<string | null>(null);
   const [callMode, setCallMode] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { avatarUrl, isGenerating: isGeneratingAvatar, generate: generateAvatar } = useAvatar(
@@ -98,6 +100,7 @@ export default function ChatScreen({
     setInput("");
     setIsSending(true);
     setErrorText(null);
+    setLastFailedText(null);
 
     try {
       const res = await fetch("/api/chat", {
@@ -115,6 +118,9 @@ export default function ChatScreen({
         throw new Error(data.error || "응답을 받지 못했어");
       }
 
+      // A short human-like pause before the reply appears, scaled to its length.
+      await new Promise((resolve) => setTimeout(resolve, typingDelayMs(data.reply.length)));
+
       const assistantMessage: ChatMessage = {
         id: newId(),
         role: "assistant",
@@ -130,9 +136,15 @@ export default function ChatScreen({
       }));
     } catch (err) {
       setErrorText(err instanceof Error ? err.message : "알 수 없는 오류가 발생했어");
+      setLastFailedText(text);
     } finally {
       setIsSending(false);
     }
+  }
+
+  function handleRetry() {
+    if (!lastFailedText) return;
+    handleSend(lastFailedText);
   }
 
   function handleReset() {
@@ -211,7 +223,17 @@ export default function ChatScreen({
           </div>
         )}
         {errorText && (
-          <p className="text-center text-xs text-rose-500">{errorText}</p>
+          <div className="flex flex-col items-center gap-2 text-center">
+            <p className="text-xs text-rose-500">{errorText}</p>
+            {lastFailedText && (
+              <button
+                onClick={handleRetry}
+                className="text-xs font-medium text-rose-500 hover:text-rose-600 underline underline-offset-2"
+              >
+                다시 시도
+              </button>
+            )}
+          </div>
         )}
       </div>
 
