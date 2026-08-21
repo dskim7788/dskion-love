@@ -4,8 +4,10 @@ import PersonaCard from "./PersonaCard";
 
 export default function PersonaSelect({
   onSelect,
+  streak,
 }: {
   onSelect: (persona: Persona) => void;
+  streak?: number;
 }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 bg-gradient-to-b from-rose-50 via-white to-white dark:from-zinc-950 dark:via-zinc-950 dark:to-black">
@@ -16,6 +18,11 @@ export default function PersonaSelect({
         <p className="text-zinc-500 dark:text-zinc-400 text-sm sm:text-base">
           매일 대화하고 싶은 나만의 AI 컴패니언을 골라보세요
         </p>
+        {!!streak && streak > 1 && (
+          <div className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-orange-100 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-medium px-3 py-1">
+            🔥 {streak}일 연속 방문 중
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-2xl">
