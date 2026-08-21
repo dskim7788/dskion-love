@@ -126,6 +126,7 @@ export default function ChatScreen({
         isSending={isSending}
         onSend={(text) => handleSend(text)}
         onEndCall={() => setCallMode(false)}
+        affection={state.affection}
       />
     );
   }

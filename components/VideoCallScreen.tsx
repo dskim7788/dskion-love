@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { ChatMessage, Persona } from "@/lib/types";
+import { getAffectionStage } from "@/lib/personas";
 import AvatarImage from "./AvatarImage";
+import FloatingParticles from "./FloatingParticles";
 
 function formatDuration(seconds: number) {
   const m = Math.floor(seconds / 60)
@@ -21,6 +23,7 @@ export default function VideoCallScreen({
   isSending,
   onSend,
   onEndCall,
+  affection = 0,
 }: {
   persona: Persona;
   avatarUrl: string | null;
@@ -30,18 +33,26 @@ export default function VideoCallScreen({
   isSending: boolean;
   onSend: (text: string) => void;
   onEndCall: () => void;
+  affection?: number;
 }) {
   const [seconds, setSeconds] = useState(0);
   const [cameraOn, setCameraOn] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [input, setInput] = useState("");
+  const [isConnecting, setIsConnecting] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
+    const timer = setTimeout(() => setIsConnecting(false), 1100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (isConnecting) return;
     const timer = setInterval(() => setSeconds((s) => s + 1), 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [isConnecting]);
 
   useEffect(() => {
     if (!cameraOn) {
@@ -81,6 +92,8 @@ export default function VideoCallScreen({
   }, []);
 
   const lastAssistantMessage = [...messages].reverse().find((m) => m.role === "assistant");
+  const affectionStage = getAffectionStage(affection);
+  const particleCount = Math.min(6, Math.max(0, Math.floor(affection / 20)));
 
   function handleSend() {
     const text = input.trim();
@@ -113,18 +126,38 @@ export default function VideoCallScreen({
           </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/0 to-black/40" />
+        {!isConnecting && <FloatingParticles count={particleCount} />}
       </div>
+
+      {isConnecting && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-black/50 backdrop-blur-sm">
+          <div className="relative">
+            <span className="absolute inset-0 rounded-full bg-white/30 animate-pulse-ring" />
+            <AvatarImage
+              persona={persona}
+              avatarUrl={avatarUrl}
+              className="relative h-20 w-20 rounded-full border-2 border-white/60"
+              emojiClassName="text-3xl"
+            />
+          </div>
+          <div className="text-white text-sm font-medium drop-shadow">
+            {persona.name}에게 연결하는 중...
+          </div>
+        </div>
+      )}
 
       <div className="relative flex items-center justify-between px-4 pt-[calc(env(safe-area-inset-top)+0.75rem)]">
         <button
           onClick={onEndCall}
-          className="h-9 w-9 rounded-full bg-black/30 backdrop-blur text-white flex items-center justify-center"
+          className="h-9 w-9 rounded-full bg-black/30 backdrop-blur text-white flex items-center justify-center active:scale-90 transition-transform"
           aria-label="통화 종료"
         >
           ↓
         </button>
         <div className="text-center text-white">
-          <div className="text-sm font-semibold drop-shadow">{persona.name}</div>
+          <div className="text-sm font-semibold drop-shadow">
+            {affectionStage.emoji} {persona.name}
+          </div>
           <div className="text-xs text-white/70 drop-shadow">영상통화 중 {formatDuration(seconds)}</div>
         </div>
         <div className="h-9 w-9" />
@@ -160,7 +193,7 @@ export default function VideoCallScreen({
         <div className="flex items-center gap-2">
           <button
             onClick={() => setCameraOn((v) => !v)}
-            className={`shrink-0 h-11 w-11 rounded-full flex items-center justify-center backdrop-blur transition-colors ${
+            className={`shrink-0 h-11 w-11 rounded-full flex items-center justify-center backdrop-blur transition-all active:scale-90 ${
               cameraOn ? "bg-white text-zinc-900" : "bg-white/20 text-white"
             }`}
             aria-label="카메라 켜기/끄기"
@@ -182,14 +215,14 @@ export default function VideoCallScreen({
           <button
             onClick={handleSend}
             disabled={isSending || !input.trim()}
-            className="shrink-0 h-11 w-11 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 text-white flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+            className="shrink-0 h-11 w-11 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 text-white flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-90"
             aria-label="전송"
           >
             ➤
           </button>
           <button
             onClick={onEndCall}
-            className="shrink-0 h-11 w-11 rounded-full bg-red-500 text-white flex items-center justify-center"
+            className="shrink-0 h-11 w-11 rounded-full bg-red-500 text-white flex items-center justify-center transition-transform active:scale-90"
             style={{ transform: "rotate(135deg)" }}
             aria-label="통화 종료"
           >
