@@ -7,6 +7,7 @@ export const runtime = "nodejs";
 interface ChatRequestBody {
   personaId: string;
   affection: number;
+  casualApproved?: boolean;
   messages: { role: "user" | "assistant"; content: string }[];
   customPersona?: { name: string; personalityDescription: string };
 }
@@ -41,6 +42,7 @@ export async function POST(request: Request) {
   const messages = Array.isArray(body.messages) ? body.messages.slice(-20) : [];
   const affection = Number.isFinite(body.affection) ? body.affection : 0;
   const stage = getAffectionStage(affection);
+  const casualApproved = body.casualApproved ?? true;
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -51,10 +53,17 @@ export async function POST(request: Request) {
 
   const client = new Anthropic({ apiKey });
 
+  const formalityBlock = casualApproved
+    ? ""
+    : `
+
+[말투 상태: 아직 반말 허락 전]
+방금 처음 만난 사이라 아직 서로 반말을 하기로 하지 않았어. 반드시 존댓말로 정중하고 다정하게 말하고, 자연스러운 타이밍에 "말 편하게 해도 될까요?" 같은 뉘앙스로 반말을 해도 될지 물어봐. 페르소나의 성격은 유지하되 어미만 존댓말로 바꿔서 말해. 사용자가 아직 명확히 동의하지 않았다면 존댓말을 계속 유지해.`;
+
   const systemPrompt = `${personaSystemPrompt}
 
 [현재 호감도 단계: ${stage.label} (${affection}/100)]
-이 단계에 어울리는 친밀도로 대화해. 단계가 낮을수록 약간 조심스럽고 예의를 갖추고, 단계가 높을수록 더 편안하고 다정하게 대해.`;
+이 단계에 어울리는 친밀도로 대화해. 단계가 낮을수록 약간 조심스럽고 예의를 갖추고, 단계가 높을수록 더 편안하고 다정하게 대해.${formalityBlock}`;
 
   try {
     const response = await client.messages.create({

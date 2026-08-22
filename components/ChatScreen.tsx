@@ -5,6 +5,7 @@ import type { ChatMessage, ConversationState, Persona } from "@/lib/types";
 import { loadConversation, saveConversation, clearConversation } from "@/lib/storage";
 import { useAvatar } from "@/lib/useAvatar";
 import { typingDelayMs } from "@/lib/format";
+import { detectCasualConsent } from "@/lib/consent";
 import MessageBubble from "./MessageBubble";
 import AffectionBar from "./AffectionBar";
 import AvatarImage from "./AvatarImage";
@@ -15,15 +16,17 @@ function newId() {
 }
 
 function initialState(persona: Persona): ConversationState {
+  const useFormalGreeting = !!persona.formalGreeting;
   return {
     personaId: persona.id,
     affection: 5,
     lastInteractionAt: null,
+    casualApproved: !useFormalGreeting,
     messages: [
       {
         id: newId(),
         role: "assistant",
-        content: persona.greeting,
+        content: useFormalGreeting ? persona.formalGreeting! : persona.greeting,
         createdAt: Date.now(),
       },
     ],
@@ -66,7 +69,11 @@ export default function ChatScreen({
 }) {
   const [state, setState] = useState<ConversationState>(() => {
     const loaded = loadConversation(persona.id);
-    return loaded ? withWelcomeBack(loaded, persona) : initialState(persona);
+    if (!loaded) return initialState(persona);
+    // Older saved conversations predate the formal-greeting flow, so treat
+    // them as an already-established, casual relationship.
+    const withDefaults = { ...loaded, casualApproved: loaded.casualApproved ?? true };
+    return withWelcomeBack(withDefaults, persona);
   });
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -99,7 +106,9 @@ export default function ChatScreen({
     };
 
     const nextMessages = [...state.messages, userMessage];
-    setState((prev) => ({ ...prev, messages: nextMessages }));
+    const nextCasualApproved =
+      state.casualApproved || (!!persona.formalGreeting && detectCasualConsent(text));
+    setState((prev) => ({ ...prev, messages: nextMessages, casualApproved: nextCasualApproved }));
     setInput("");
     setIsSending(true);
     setErrorText(null);
@@ -112,6 +121,7 @@ export default function ChatScreen({
         body: JSON.stringify({
           personaId: persona.id,
           affection: state.affection,
+          casualApproved: nextCasualApproved,
           messages: nextMessages.map((m) => ({ role: m.role, content: m.content })),
           customPersona: persona.isCustom
             ? { name: persona.name, personalityDescription: persona.personalityDescription ?? "" }

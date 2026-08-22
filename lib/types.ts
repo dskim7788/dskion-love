@@ -16,6 +16,7 @@ export interface Persona {
   description: string;
   speechStyle: string;
   greeting: string;
+  formalGreeting?: string;
   systemPrompt: string;
   avatarPrompt: string;
   welcomeBackLines: string[];
@@ -35,4 +36,5 @@ export interface ConversationState {
   messages: ChatMessage[];
   affection: number;
   lastInteractionAt: number | null;
+  casualApproved?: boolean;
 }
