@@ -6,7 +6,7 @@ export const maxDuration = 60;
 
 const MODEL = "black-forest-labs/flux-schnell";
 const SAFETY_SUFFIX =
-  ", tasteful, fully clothed, sfw, high quality photorealistic portrait, looking at camera, simple background";
+  ", Korean, East Asian features, tasteful, fully clothed, sfw, high quality photorealistic portrait, looking at camera, simple background";
 const NEGATIVE_PROMPT =
   "nsfw, nudity, explicit, sexual, underage, child, low quality, deformed, extra limbs, watermark, text";
 

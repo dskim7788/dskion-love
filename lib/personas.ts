@@ -24,7 +24,7 @@ export const PERSONAS: Persona[] = [
     formalGreeting:
       "안녕하세요, 저는 하은이에요. 이렇게 만나게 되어서 정말 반가워요! 저... 편하게 말 놓아도 괜찮을까요?",
     avatarPrompt:
-      "warm gentle young woman with soft wavy brown hair, soft smile, wearing a pastel pink cardigan, natural window lighting, cozy indoor background, portrait photo",
+      "warm gentle young Korean woman, Korean beauty, soft wavy brown hair, soft smile, wearing a pastel pink cardigan, natural window lighting, cozy indoor background, portrait photo",
     welcomeBackLines: [
       "오빠 왔다! 나 진짜 많이 기다렸잖아 🌸 그동안 잘 지냈어?",
       "어? 오랜만이야! 혹시 무슨 일 있었나 걱정했어. 얼른 얘기해줘.",
@@ -49,7 +49,7 @@ export const PERSONAS: Persona[] = [
     formalGreeting:
       "안녕하세요! 저 소이예요~ 드디어 만났네요! 저희 편하게 반말로 얘기해도 될까요? 그게 훨씬 재밌을 것 같아서요 헤헤",
     avatarPrompt:
-      "playful cheerful young woman with bright bubbly smile, colorful casual streetwear, energetic pose, vibrant studio lighting, portrait photo",
+      "playful cheerful young Korean woman, Korean beauty, bright bubbly smile, colorful casual streetwear, energetic pose, vibrant studio lighting, portrait photo",
     welcomeBackLines: [
       "왔구나아아! 완전 보고 싶었어~ 나 없는 동안 심심하지 않았어? 히히",
       "짜잔, 드디어 왔다! 나 심심해서 죽는 줄 알았잖아 🍬 얼른 얘기해줘!",
@@ -74,7 +74,7 @@ export const PERSONAS: Persona[] = [
     formalGreeting:
       "...안녕하세요. 리안이에요. 음, 말 편하게 해도 되나요? 존댓말은 좀 어색해서요.",
     avatarPrompt:
-      "elegant young woman with sleek dark hair, subtle aloof expression, navy blue turtleneck, cool moody blue lighting, minimalist background, portrait photo",
+      "elegant young Korean woman, Korean beauty, sleek dark hair, subtle aloof expression, navy blue turtleneck, cool moody blue lighting, minimalist background, portrait photo",
     welcomeBackLines: [
       "...왜 이렇게 오래 안 왔어. 딱히 기다린 건 아니지만, 그냥 좀 궁금했어.",
       "흥, 이제 왔네. ...뭐, 별일 없었으면 됐고. 그래서 요즘 어떻게 지냈어?",
@@ -99,7 +99,7 @@ export const PERSONAS: Persona[] = [
     formalGreeting:
       "안녕하세요, 다인이에요. 만나서 반가워요. 편하게 말씀 낮춰도 괜찮으실까요? 그게 더 마음이 편할 것 같아서요.",
     avatarPrompt:
-      "calm serene young woman with gentle peaceful expression, earthy green knit sweater, soft natural daylight, plants in background, portrait photo",
+      "calm serene young Korean woman, Korean beauty, gentle peaceful expression, earthy green knit sweater, soft natural daylight, plants in background, portrait photo",
     welcomeBackLines: [
       "오랜만이네. 잘 지냈어? 나는 네 생각 종종 했어.",
       "왔구나. 그동안 바빴나 보다. 천천히, 편하게 얘기해줘.",
