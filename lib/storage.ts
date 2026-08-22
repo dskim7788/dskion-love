@@ -1,4 +1,4 @@
-import type { ConversationState } from "./types";
+import type { ChatMessage, ConversationState } from "./types";
 
 const STORAGE_PREFIX = "dskion-love:conversation:";
 const SELECTED_PERSONA_KEY = "dskion-love:selected-persona";
@@ -37,6 +37,26 @@ export function clearConversation(personaId: string) {
 
 export function hasMetPersona(personaId: string): boolean {
   return loadConversation(personaId) !== null;
+}
+
+// Appends a proactively-pushed message (from a web push notification) into an
+// existing conversation. Silently no-ops if the conversation doesn't exist
+// yet, since a subscription can only be created from inside that persona's
+// chat screen in the first place.
+export function appendPushedMessage(personaId: string, content: string) {
+  const existing = loadConversation(personaId);
+  if (!existing) return;
+  const message: ChatMessage = {
+    id: Math.random().toString(36).slice(2) + Date.now().toString(36),
+    role: "assistant",
+    content,
+    createdAt: Date.now(),
+  };
+  saveConversation({
+    ...existing,
+    messages: [...existing.messages, message],
+    lastInteractionAt: Date.now(),
+  });
 }
 
 export function getSelectedPersonaId(): string | null {

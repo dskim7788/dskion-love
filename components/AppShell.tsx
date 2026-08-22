@@ -8,6 +8,7 @@ import {
   setSelectedPersonaId,
   clearSelectedPersona,
   hasMetPersona,
+  appendPushedMessage,
 } from "@/lib/storage";
 import { registerVisit } from "@/lib/streak";
 import {
@@ -41,9 +42,20 @@ export default function AppShell({
     const custom = loadCustomPersonas();
     setCustomPersonas(custom);
 
-    const savedId = getSelectedPersonaId();
+    // A tapped push notification deep-links here with the persona and the
+    // exact message that was pushed, so it lands in that chat's history too.
+    const params = new URLSearchParams(window.location.search);
+    const nudgePersonaId = params.get("nudge");
+    const nudgeMsg = params.get("msg");
+    if (nudgePersonaId && nudgeMsg) {
+      appendPushedMessage(nudgePersonaId, nudgeMsg);
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+
+    const savedId = nudgePersonaId ?? getSelectedPersonaId();
     const found = getPersona(savedId) ?? custom.find((p) => p.id === savedId) ?? null;
     setPersona(found);
+    if (found) setSelectedPersonaId(found.id);
     setStreak(registerVisit().streak);
     setMetPersonaIds(new Set(PERSONAS.filter((p) => hasMetPersona(p.id)).map((p) => p.id)));
   }, []);
