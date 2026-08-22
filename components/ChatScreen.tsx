@@ -81,6 +81,7 @@ export default function ChatScreen({
   const [lastFailedText, setLastFailedText] = useState<string | null>(null);
   const [callMode, setCallMode] = useState(autoStartCall);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const hasScrolledOnceRef = useRef(false);
   const { avatarUrl, isGenerating: isGeneratingAvatar, generate: generateAvatar } = useAvatar(
     persona.id,
     persona.isCustom ? persona.avatarPrompt : undefined
@@ -91,7 +92,12 @@ export default function ChatScreen({
   }, [state]);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    if (!scrollRef.current) return;
+    // Jump straight to the latest message when the chat first opens (no
+    // visible scroll-from-top), then animate smoothly for later updates.
+    const behavior = hasScrolledOnceRef.current ? "smooth" : "auto";
+    scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior });
+    hasScrolledOnceRef.current = true;
   }, [state.messages, isSending]);
 
   async function handleSend(overrideText?: string) {
