@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/proactive-nudge",
+      "schedule": "0 10 * * *"
+    }
+  ]
+}

@@ -6,6 +6,7 @@ import { loadConversation, saveConversation, clearConversation } from "@/lib/sto
 import { useAvatar } from "@/lib/useAvatar";
 import { typingDelayMs } from "@/lib/format";
 import { detectCasualConsent } from "@/lib/consent";
+import { isPushSupported, subscribeToPush, unsubscribeFromPush } from "@/lib/push";
 import MessageBubble from "./MessageBubble";
 import AffectionBar from "./AffectionBar";
 import AvatarImage from "./AvatarImage";
@@ -80,8 +81,35 @@ export default function ChatScreen({
   const [errorText, setErrorText] = useState<string | null>(null);
   const [lastFailedText, setLastFailedText] = useState<string | null>(null);
   const [callMode, setCallMode] = useState(autoStartCall);
+  const [pushSubscribed, setPushSubscribed] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const hasScrolledOnceRef = useRef(false);
+  const pushFlagKey = `dskion-love:push-subscribed:${persona.id}`;
+
+  useEffect(() => {
+    setPushSubscribed(window.localStorage.getItem(pushFlagKey) === "1");
+  }, [pushFlagKey]);
+
+  async function handleTogglePush() {
+    if (pushBusy) return;
+    setPushBusy(true);
+    try {
+      if (pushSubscribed) {
+        await unsubscribeFromPush();
+        window.localStorage.removeItem(pushFlagKey);
+        setPushSubscribed(false);
+      } else {
+        await subscribeToPush(persona.id, persona.name);
+        window.localStorage.setItem(pushFlagKey, "1");
+        setPushSubscribed(true);
+      }
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "알림 설정에 실패했어.");
+    } finally {
+      setPushBusy(false);
+    }
+  }
   const { avatarUrl, isGenerating: isGeneratingAvatar, generate: generateAvatar } = useAvatar(
     persona.id,
     persona.isCustom ? persona.avatarPrompt : undefined
@@ -215,6 +243,21 @@ export default function ChatScreen({
             <AffectionBar affection={state.affection} />
           </div>
         </div>
+        {isPushSupported() && (
+          <button
+            onClick={handleTogglePush}
+            disabled={pushBusy}
+            className={`shrink-0 h-9 w-9 flex items-center justify-center rounded-full transition-colors disabled:opacity-50 ${
+              pushSubscribed
+                ? "text-rose-500 bg-rose-50 dark:bg-rose-500/10"
+                : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            }`}
+            aria-label={pushSubscribed ? "알림 끄기" : "알림 받기"}
+            title={pushSubscribed ? "가끔 먼저 연락하는 알림 켜짐" : "가끔 먼저 연락하는 알림 받기"}
+          >
+            {pushSubscribed ? "🔔" : "🔕"}
+          </button>
+        )}
         <button
           onClick={() => setCallMode(true)}
           className="shrink-0 h-9 w-9 flex items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
