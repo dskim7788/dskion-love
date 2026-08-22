@@ -35,6 +35,10 @@ export function clearConversation(personaId: string) {
   window.localStorage.removeItem(STORAGE_PREFIX + personaId);
 }
 
+export function hasMetPersona(personaId: string): boolean {
+  return loadConversation(personaId) !== null;
+}
+
 export function getSelectedPersonaId(): string | null {
   if (!isBrowser()) return null;
   return window.localStorage.getItem(SELECTED_PERSONA_KEY);

@@ -7,12 +7,16 @@ export default function PersonaSelect({
   onCreateNew,
   onDelete,
   streak,
+  hasUnmetCandidates,
+  onStartBlindDate,
 }: {
   personas: Persona[];
   onSelect: (persona: Persona) => void;
   onCreateNew: () => void;
   onDelete: (persona: Persona) => void;
   streak?: number;
+  hasUnmetCandidates?: boolean;
+  onStartBlindDate?: () => void;
 }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 bg-gradient-to-b from-rose-50 via-white to-white dark:from-zinc-950 dark:via-zinc-950 dark:to-black">
@@ -29,6 +33,21 @@ export default function PersonaSelect({
           </div>
         )}
       </div>
+
+      {hasUnmetCandidates && onStartBlindDate && (
+        <button
+          onClick={onStartBlindDate}
+          className="w-full max-w-2xl mb-6 flex items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-rose-400 to-pink-500 text-white p-5 shadow-sm hover:brightness-105 transition-all"
+        >
+          <div className="text-left">
+            <div className="font-semibold">💌 새로운 소개팅 신청하기</div>
+            <div className="text-xs text-white/85 mt-0.5">
+              이상형 질문에 답하고 어울리는 상대를 매칭받아보세요
+            </div>
+          </div>
+          <span className="text-xl shrink-0">→</span>
+        </button>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-2xl">
         {personas.map((persona) => (
