@@ -174,7 +174,7 @@ export default function ChatScreen({
   }
 
   return (
-    <div className="flex flex-1 flex-col h-dvh bg-zinc-50 dark:bg-black">
+    <div className="fixed inset-0 flex flex-col bg-zinc-50 dark:bg-black">
       <header className="flex items-center gap-3 border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur px-4 py-3">
         <button
           onClick={onBack}
@@ -213,7 +213,7 @@ export default function ChatScreen({
         </button>
       </header>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
+      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-4 py-6 space-y-4">
         {state.messages.map((message) => (
           <MessageBubble key={message.id} message={message} persona={persona} avatarUrl={avatarUrl} />
         ))}
