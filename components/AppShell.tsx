@@ -56,6 +56,7 @@ export default function AppShell({
   function handleBack() {
     clearSelectedPersona();
     setPersona(null);
+    setMetPersonaIds(new Set(PERSONAS.filter((p) => hasMetPersona(p.id)).map((p) => p.id)));
   }
 
   function handleMatched(p: Persona) {
@@ -87,11 +88,14 @@ export default function AppShell({
   }
 
   const unmetCandidates = PERSONAS.filter((p) => !metPersonaIds.has(p.id));
+  // Once every built-in persona has been met, let the blind date flow
+  // re-run against the full roster instead of disappearing entirely.
+  const blindDateCandidates = unmetCandidates.length > 0 ? unmetCandidates : PERSONAS;
 
   if (showBlindDate) {
     return (
       <BlindDateFlow
-        candidates={unmetCandidates}
+        candidates={blindDateCandidates}
         onMatched={handleMatched}
         onExit={() => setShowBlindDate(false)}
       />
@@ -123,7 +127,7 @@ export default function AppShell({
           onCreateNew={() => setShowCreate(true)}
           onDelete={handleDelete}
           streak={streak}
-          hasUnmetCandidates={unmetCandidates.length > 0}
+          hasUnmetCandidates
           onStartBlindDate={() => setShowBlindDate(true)}
         />
       </div>
