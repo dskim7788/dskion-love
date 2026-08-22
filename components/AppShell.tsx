@@ -3,7 +3,12 @@
 import { useEffect, useState } from "react";
 import type { Persona } from "@/lib/types";
 import { PERSONAS, getPersona } from "@/lib/personas";
-import { getSelectedPersonaId, setSelectedPersonaId, clearSelectedPersona } from "@/lib/storage";
+import {
+  getSelectedPersonaId,
+  setSelectedPersonaId,
+  clearSelectedPersona,
+  hasMetPersona,
+} from "@/lib/storage";
 import { registerVisit } from "@/lib/streak";
 import {
   loadCustomPersonas,
@@ -13,6 +18,7 @@ import {
 import PersonaSelect from "@/components/PersonaSelect";
 import ChatScreen from "@/components/ChatScreen";
 import CreatePersonaScreen from "@/components/CreatePersonaScreen";
+import BlindDateFlow from "@/components/BlindDateFlow";
 
 export default function AppShell({
   userName,
@@ -26,7 +32,10 @@ export default function AppShell({
   const [persona, setPersona] = useState<Persona | null | undefined>(undefined);
   const [customPersonas, setCustomPersonas] = useState<Persona[]>([]);
   const [showCreate, setShowCreate] = useState(false);
+  const [showBlindDate, setShowBlindDate] = useState(false);
   const [streak, setStreak] = useState(0);
+  const [metPersonaIds, setMetPersonaIds] = useState<Set<string>>(new Set());
+  const [justMatchedId, setJustMatchedId] = useState<string | null>(null);
 
   useEffect(() => {
     const custom = loadCustomPersonas();
@@ -36,6 +45,7 @@ export default function AppShell({
     const found = getPersona(savedId) ?? custom.find((p) => p.id === savedId) ?? null;
     setPersona(found);
     setStreak(registerVisit().streak);
+    setMetPersonaIds(new Set(PERSONAS.filter((p) => hasMetPersona(p.id)).map((p) => p.id)));
   }, []);
 
   function handleSelect(p: Persona) {
@@ -46,6 +56,13 @@ export default function AppShell({
   function handleBack() {
     clearSelectedPersona();
     setPersona(null);
+  }
+
+  function handleMatched(p: Persona) {
+    setMetPersonaIds((prev) => new Set(prev).add(p.id));
+    setJustMatchedId(p.id);
+    setShowBlindDate(false);
+    handleSelect(p);
   }
 
   function handleCreate(p: Persona) {
@@ -69,7 +86,20 @@ export default function AppShell({
     return <CreatePersonaScreen onCreate={handleCreate} onCancel={() => setShowCreate(false)} />;
   }
 
+  const unmetCandidates = PERSONAS.filter((p) => !metPersonaIds.has(p.id));
+
+  if (showBlindDate) {
+    return (
+      <BlindDateFlow
+        candidates={unmetCandidates}
+        onMatched={handleMatched}
+        onExit={() => setShowBlindDate(false)}
+      />
+    );
+  }
+
   if (!persona) {
+    const metPersonas = PERSONAS.filter((p) => metPersonaIds.has(p.id));
     return (
       <div className="relative flex flex-1 flex-col">
         <button
@@ -88,15 +118,23 @@ export default function AppShell({
           <span className="text-zinc-400">로그아웃</span>
         </button>
         <PersonaSelect
-          personas={[...PERSONAS, ...customPersonas]}
+          personas={[...metPersonas, ...customPersonas]}
           onSelect={handleSelect}
           onCreateNew={() => setShowCreate(true)}
           onDelete={handleDelete}
           streak={streak}
+          hasUnmetCandidates={unmetCandidates.length > 0}
+          onStartBlindDate={() => setShowBlindDate(true)}
         />
       </div>
     );
   }
 
-  return <ChatScreen persona={persona} onBack={handleBack} />;
+  return (
+    <ChatScreen
+      persona={persona}
+      onBack={handleBack}
+      autoStartCall={persona.id === justMatchedId}
+    />
+  );
 }

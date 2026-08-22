@@ -58,9 +58,11 @@ function withWelcomeBack(loaded: ConversationState, persona: Persona): Conversat
 export default function ChatScreen({
   persona,
   onBack,
+  autoStartCall = false,
 }: {
   persona: Persona;
   onBack: () => void;
+  autoStartCall?: boolean;
 }) {
   const [state, setState] = useState<ConversationState>(() => {
     const loaded = loadConversation(persona.id);
@@ -70,7 +72,7 @@ export default function ChatScreen({
   const [isSending, setIsSending] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
   const [lastFailedText, setLastFailedText] = useState<string | null>(null);
-  const [callMode, setCallMode] = useState(false);
+  const [callMode, setCallMode] = useState(autoStartCall);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { avatarUrl, isGenerating: isGeneratingAvatar, generate: generateAvatar } = useAvatar(
     persona.id,
