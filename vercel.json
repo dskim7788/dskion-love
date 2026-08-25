@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/proactive-nudge",
-      "schedule": "0 10 * * *"
+      "schedule": "0 3 * * *"
     }
   ]
 }
