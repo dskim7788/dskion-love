@@ -128,7 +128,7 @@ export default function ChatScreen({
     hasScrolledOnceRef.current = true;
   }, [state.messages, isSending]);
 
-  async function handleSend(overrideText?: string) {
+  async function handleSend(overrideText?: string, imageDataUrl?: string) {
     const text = (overrideText ?? input).trim();
     if (!text || isSending) return;
 
@@ -156,7 +156,13 @@ export default function ChatScreen({
           personaId: persona.id,
           affection: state.affection,
           casualApproved: nextCasualApproved,
-          messages: nextMessages.map((m) => ({ role: m.role, content: m.content })),
+          messages: nextMessages.map((m, i) => ({
+            role: m.role,
+            content: m.content,
+            // Only the message being sent right now can carry a live camera
+            // frame — we never persist snapshots into local chat history.
+            imageDataUrl: i === nextMessages.length - 1 ? imageDataUrl : undefined,
+          })),
           customPersona: persona.isCustom
             ? { name: persona.name, personalityDescription: persona.personalityDescription ?? "" }
             : undefined,
@@ -212,7 +218,7 @@ export default function ChatScreen({
         onGenerateAvatar={generateAvatar}
         messages={state.messages}
         isSending={isSending}
-        onSend={(text) => handleSend(text)}
+        onSend={(text, imageDataUrl) => handleSend(text, imageDataUrl)}
         onEndCall={() => setCallMode(false)}
         affection={state.affection}
       />

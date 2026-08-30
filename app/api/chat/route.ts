@@ -8,8 +8,14 @@ interface ChatRequestBody {
   personaId: string;
   affection: number;
   casualApproved?: boolean;
-  messages: { role: "user" | "assistant"; content: string }[];
+  messages: { role: "user" | "assistant"; content: string; imageDataUrl?: string }[];
   customPersona?: { name: string; personalityDescription: string };
+}
+
+function parseDataUrl(dataUrl: string): { mediaType: string; base64: string } | null {
+  const match = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/.exec(dataUrl);
+  if (!match) return null;
+  return { mediaType: match[1], base64: match[2] };
 }
 
 const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
@@ -60,17 +66,44 @@ export async function POST(request: Request) {
 [말투 상태: 아직 반말 허락 전]
 방금 처음 만난 사이라 아직 서로 반말을 하기로 하지 않았어. 반드시 존댓말로 정중하고 다정하게 말하고, 자연스러운 타이밍에 "말 편하게 해도 될까요?" 같은 뉘앙스로 반말을 해도 될지 물어봐. 페르소나의 성격은 유지하되 어미만 존댓말로 바꿔서 말해. 사용자가 아직 명확히 동의하지 않았다면 존댓말을 계속 유지해.`;
 
+  const hasImage = messages.some((m) => !!m.imageDataUrl);
+  const visionBlock = hasImage
+    ? `
+
+[영상통화 카메라]
+사용자가 영상통화 중 카메라를 켜서 지금 자기 모습을 보여줬어. 사진 속 모습이나 표정, 배경 등을 자연스럽게 언급하며 반응해줘. 외모를 과도하게 평가하거나 선정적으로 묘사하지 않고, 다정하고 편안한 반응으로 짧게 언급한다.`
+    : "";
+
   const systemPrompt = `${personaSystemPrompt}
 
 [현재 호감도 단계: ${stage.label} (${affection}/100)]
-이 단계에 어울리는 친밀도로 대화해. 단계가 낮을수록 약간 조심스럽고 예의를 갖추고, 단계가 높을수록 더 편안하고 다정하게 대해.${formalityBlock}`;
+이 단계에 어울리는 친밀도로 대화해. 단계가 낮을수록 약간 조심스럽고 예의를 갖추고, 단계가 높을수록 더 편안하고 다정하게 대해.${formalityBlock}${visionBlock}`;
 
   try {
     const response = await client.messages.create({
       model: MODEL,
       max_tokens: 400,
       system: systemPrompt,
-      messages: messages.map((m) => ({ role: m.role, content: m.content })),
+      messages: messages.map((m) => {
+        const parsedImage = m.imageDataUrl ? parseDataUrl(m.imageDataUrl) : null;
+        if (!parsedImage) {
+          return { role: m.role, content: m.content };
+        }
+        return {
+          role: m.role,
+          content: [
+            {
+              type: "image" as const,
+              source: {
+                type: "base64" as const,
+                media_type: parsedImage.mediaType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
+                data: parsedImage.base64,
+              },
+            },
+            { type: "text" as const, text: m.content },
+          ],
+        };
+      }),
     });
 
     const textBlock = response.content.find((block) => block.type === "text");

@@ -31,7 +31,7 @@ export default function VideoCallScreen({
   onGenerateAvatar: () => void;
   messages: ChatMessage[];
   isSending: boolean;
-  onSend: (text: string) => void;
+  onSend: (text: string, imageDataUrl?: string) => void;
   onEndCall: () => void;
   affection?: number;
 }) {
@@ -42,6 +42,7 @@ export default function VideoCallScreen({
   const [isConnecting, setIsConnecting] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsConnecting(false), 1100);
@@ -95,10 +96,30 @@ export default function VideoCallScreen({
   const affectionStage = getAffectionStage(affection);
   const particleCount = Math.min(6, Math.max(0, Math.floor(affection / 20)));
 
+  function captureFrame(): string | undefined {
+    const video = videoRef.current;
+    if (!video || !cameraOn || video.readyState < 2) return undefined;
+
+    const maxWidth = 480;
+    const scale = Math.min(1, maxWidth / video.videoWidth);
+    const width = Math.round(video.videoWidth * scale);
+    const height = Math.round(video.videoHeight * scale);
+    if (!width || !height) return undefined;
+
+    const canvas = canvasRef.current ?? document.createElement("canvas");
+    canvasRef.current = canvas;
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return undefined;
+    ctx.drawImage(video, 0, 0, width, height);
+    return canvas.toDataURL("image/jpeg", 0.6);
+  }
+
   function handleSend() {
     const text = input.trim();
     if (!text || isSending) return;
-    onSend(text);
+    onSend(text, captureFrame());
     setInput("");
   }
 
