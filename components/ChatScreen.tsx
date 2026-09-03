@@ -83,6 +83,7 @@ export default function ChatScreen({
   const [isSending, setIsSending] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
   const [lastFailedText, setLastFailedText] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const [callMode, setCallMode] = useState(autoStartCall);
   const [pushSubscribed, setPushSubscribed] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
@@ -151,6 +152,7 @@ export default function ChatScreen({
     setIsSending(true);
     setErrorText(null);
     setLastFailedText(null);
+    setSuggestions([]);
 
     try {
       const res = await fetch("/api/chat", {
@@ -194,6 +196,7 @@ export default function ChatScreen({
         affection: Math.min(100, prev.affection + (data.affectionDelta ?? 1)),
         lastInteractionAt: Date.now(),
       }));
+      setSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []);
     } catch (err) {
       setErrorText(err instanceof Error ? err.message : "알 수 없는 오류가 발생했어");
       setLastFailedText(text);
@@ -211,6 +214,7 @@ export default function ChatScreen({
     if (!window.confirm(`${persona.name}와의 대화 기록을 모두 지울까요?`)) return;
     clearConversation(persona.id);
     setState(initialState(persona));
+    setSuggestions([]);
   }
 
   if (callMode) {
@@ -314,6 +318,19 @@ export default function ChatScreen({
       </div>
 
       <div className="border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-4 py-3">
+        {suggestions.length > 0 && !isSending && (
+          <div className="flex gap-2 overflow-x-auto pb-2 max-w-3xl mx-auto">
+            {suggestions.map((suggestion, i) => (
+              <button
+                key={i}
+                onClick={() => handleSend(suggestion)}
+                className="shrink-0 rounded-full border border-rose-200 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-300 text-xs px-3.5 py-2 hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-colors"
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="flex items-center gap-2 max-w-3xl mx-auto">
           <input
             value={input}
