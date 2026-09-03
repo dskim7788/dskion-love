@@ -12,6 +12,7 @@ export default async function Home() {
 
   return (
     <AppShell
+      userId={session.user.id}
       userName={session.user.name}
       userImage={session.user.image}
       onSignOut={signOutAction}

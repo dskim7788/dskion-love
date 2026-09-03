@@ -16,16 +16,19 @@ import {
   addCustomPersona,
   removeCustomPersona,
 } from "@/lib/customPersonaStorage";
+import { syncOnLoad, pushCustomPersona, deleteCustomPersonaOnServer } from "@/lib/sync";
 import PersonaSelect from "@/components/PersonaSelect";
 import ChatScreen from "@/components/ChatScreen";
 import CreatePersonaScreen from "@/components/CreatePersonaScreen";
 import BlindDateFlow from "@/components/BlindDateFlow";
 
 export default function AppShell({
+  userId,
   userName,
   userImage,
   onSignOut,
 }: {
+  userId: string | null | undefined;
   userName: string | null | undefined;
   userImage: string | null | undefined;
   onSignOut: () => void;
@@ -39,26 +42,40 @@ export default function AppShell({
   const [justMatchedId, setJustMatchedId] = useState<string | null>(null);
 
   useEffect(() => {
-    const custom = loadCustomPersonas();
-    setCustomPersonas(custom);
+    let cancelled = false;
 
-    // A tapped push notification deep-links here with the persona and the
-    // exact message that was pushed, so it lands in that chat's history too.
-    const params = new URLSearchParams(window.location.search);
-    const nudgePersonaId = params.get("nudge");
-    const nudgeMsg = params.get("msg");
-    if (nudgePersonaId && nudgeMsg) {
-      appendPushedMessage(nudgePersonaId, nudgeMsg);
-      window.history.replaceState({}, "", window.location.pathname);
+    async function init() {
+      // A tapped push notification deep-links here with the persona and the
+      // exact message that was pushed, so it lands in that chat's history too.
+      // Written to localStorage first so it's the freshest copy once synced.
+      const params = new URLSearchParams(window.location.search);
+      const nudgePersonaId = params.get("nudge");
+      const nudgeMsg = params.get("msg");
+      if (nudgePersonaId && nudgeMsg) {
+        appendPushedMessage(nudgePersonaId, nudgeMsg);
+        window.history.replaceState({}, "", window.location.pathname);
+      }
+
+      // Reconcile this browser's local conversations/custom personas with
+      // whatever this account already has saved on the server, so switching
+      // devices or clearing browser data doesn't lose chat history.
+      const custom = userId ? (await syncOnLoad()).customPersonas : loadCustomPersonas();
+      if (cancelled) return;
+      setCustomPersonas(custom);
+
+      const savedId = nudgePersonaId ?? getSelectedPersonaId();
+      const found = getPersona(savedId) ?? custom.find((p) => p.id === savedId) ?? null;
+      setPersona(found);
+      if (found) setSelectedPersonaId(found.id);
+      setStreak(registerVisit().streak);
+      setMetPersonaIds(new Set(PERSONAS.filter((p) => hasMetPersona(p.id)).map((p) => p.id)));
     }
 
-    const savedId = nudgePersonaId ?? getSelectedPersonaId();
-    const found = getPersona(savedId) ?? custom.find((p) => p.id === savedId) ?? null;
-    setPersona(found);
-    if (found) setSelectedPersonaId(found.id);
-    setStreak(registerVisit().streak);
-    setMetPersonaIds(new Set(PERSONAS.filter((p) => hasMetPersona(p.id)).map((p) => p.id)));
-  }, []);
+    init();
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
 
   function handleSelect(p: Persona) {
     setSelectedPersonaId(p.id);
@@ -83,12 +100,14 @@ export default function AppShell({
     setCustomPersonas((prev) => [...prev, p]);
     setShowCreate(false);
     handleSelect(p);
+    if (userId) pushCustomPersona(p);
   }
 
   function handleDelete(p: Persona) {
     if (!window.confirm(`"${p.name}" 캐릭터를 삭제할까요? 대화 기록도 함께 사라져요.`)) return;
     removeCustomPersona(p.id);
     setCustomPersonas((prev) => prev.filter((c) => c.id !== p.id));
+    if (userId) deleteCustomPersonaOnServer(p.id);
   }
 
   if (persona === undefined) {
@@ -151,6 +170,7 @@ export default function AppShell({
       persona={persona}
       onBack={handleBack}
       autoStartCall={persona.id === justMatchedId}
+      userId={userId}
     />
   );
 }

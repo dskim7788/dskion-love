@@ -7,6 +7,7 @@ import { useAvatar } from "@/lib/useAvatar";
 import { typingDelayMs } from "@/lib/format";
 import { detectCasualConsent } from "@/lib/consent";
 import { isPushSupported, subscribeToPush, unsubscribeFromPush } from "@/lib/push";
+import { pushConversation } from "@/lib/sync";
 import MessageBubble from "./MessageBubble";
 import AffectionBar from "./AffectionBar";
 import AvatarImage from "./AvatarImage";
@@ -63,10 +64,12 @@ export default function ChatScreen({
   persona,
   onBack,
   autoStartCall = false,
+  userId,
 }: {
   persona: Persona;
   onBack: () => void;
   autoStartCall?: boolean;
+  userId?: string | null;
 }) {
   const [state, setState] = useState<ConversationState>(() => {
     const loaded = loadConversation(persona.id);
@@ -117,7 +120,8 @@ export default function ChatScreen({
 
   useEffect(() => {
     saveConversation(state);
-  }, [state]);
+    if (userId) pushConversation(persona.id, state);
+  }, [state, userId, persona.id]);
 
   useEffect(() => {
     if (!scrollRef.current) return;
