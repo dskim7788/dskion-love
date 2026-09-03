@@ -39,6 +39,18 @@ export function hasMetPersona(personaId: string): boolean {
   return loadConversation(personaId) !== null;
 }
 
+export function listConversationPersonaIds(): string[] {
+  if (!isBrowser()) return [];
+  const ids: string[] = [];
+  for (let i = 0; i < window.localStorage.length; i++) {
+    const key = window.localStorage.key(i);
+    if (key?.startsWith(STORAGE_PREFIX)) {
+      ids.push(key.slice(STORAGE_PREFIX.length));
+    }
+  }
+  return ids;
+}
+
 // Appends a proactively-pushed message (from a web push notification) into an
 // existing conversation. Silently no-ops if the conversation doesn't exist
 // yet, since a subscription can only be created from inside that persona's

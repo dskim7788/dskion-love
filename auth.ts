@@ -9,4 +9,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   trustHost: true,
+  callbacks: {
+    async jwt({ token, account }) {
+      if (account) {
+        // Kakao's stable per-user id, used as the sync key for server-side
+        // conversation/persona storage.
+        token.userId = account.providerAccountId;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user && typeof token.userId === "string") {
+        session.user.id = token.userId;
+      }
+      return session;
+    },
+  },
 });
