@@ -8,6 +8,7 @@ import { typingDelayMs } from "@/lib/format";
 import { detectCasualConsent } from "@/lib/consent";
 import { isPushSupported, subscribeToPush, unsubscribeFromPush } from "@/lib/push";
 import { pushConversation } from "@/lib/sync";
+import { withSubjectParticle, withConjunctionParticle } from "@/lib/korean";
 import MessageBubble from "./MessageBubble";
 import AffectionBar from "./AffectionBar";
 import AvatarImage from "./AvatarImage";
@@ -213,7 +214,7 @@ export default function ChatScreen({
   }
 
   function handleReset() {
-    if (!window.confirm(`${persona.name}와의 대화 기록을 모두 지울까요?`)) return;
+    if (!window.confirm(`${withConjunctionParticle(persona.name)}의 대화 기록을 모두 지울까요?`)) return;
     clearConversation(persona.id);
     setState(initialState(persona));
     setSuggestions([]);
@@ -302,7 +303,7 @@ export default function ChatScreen({
               <span className="h-1.5 w-1.5 rounded-full bg-zinc-400 animate-bounce [animation-delay:-0.15s]" />
               <span className="h-1.5 w-1.5 rounded-full bg-zinc-400 animate-bounce" />
             </span>
-            {persona.name}가 입력 중...
+            {withSubjectParticle(persona.name)} 입력 중...
           </div>
         )}
         {errorText && (

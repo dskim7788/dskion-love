@@ -5,6 +5,7 @@ import type { ChatMessage, Persona } from "@/lib/types";
 import { getAffectionStage } from "@/lib/personas";
 import AvatarImage from "./AvatarImage";
 import FloatingParticles from "./FloatingParticles";
+import { withSubjectParticle } from "@/lib/korean";
 
 function formatDuration(seconds: number) {
   const m = Math.floor(seconds / 60)
@@ -147,7 +148,7 @@ export default function VideoCallScreen({
               key={url}
               persona={persona}
               avatarUrl={url}
-              className={`absolute inset-0 h-full w-full animate-breathe transition-opacity duration-[1500ms] ${
+              className={`absolute inset-0 h-full w-full object-top animate-breathe transition-opacity duration-[1500ms] ${
                 i === activePhotoIndex % avatarUrls.length ? "opacity-100" : "opacity-0"
               }`}
             />
@@ -227,7 +228,7 @@ export default function VideoCallScreen({
           </div>
         )}
         {isSending && (
-          <div className="text-xs text-white/70 pl-1">{persona.name}가 입력 중...</div>
+          <div className="text-xs text-white/70 pl-1">{withSubjectParticle(persona.name)} 입력 중...</div>
         )}
         {cameraError && <div className="text-xs text-rose-300 pl-1">{cameraError}</div>}
 
