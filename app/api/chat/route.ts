@@ -18,6 +18,39 @@ function parseDataUrl(dataUrl: string): { mediaType: string; base64: string } | 
   return { mediaType: match[1], base64: match[2] };
 }
 
+function getKstTimeLabel(hour: number): string {
+  if (hour < 5) return "새벽";
+  if (hour < 8) return "아침 일찍";
+  if (hour < 12) return "오전";
+  if (hour < 14) return "점심 무렵";
+  if (hour < 18) return "오후";
+  if (hour < 21) return "저녁";
+  return "밤 늦은 시간";
+}
+
+function buildTimeContext(): string {
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "short",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }).format(now);
+  const kstHour = Number(
+    new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Seoul", hour12: false, hour: "numeric" }).format(now)
+  );
+  const label = getKstTimeLabel(kstHour);
+
+  return `
+
+[현재 시각: ${parts} (한국 시간, ${label})]
+이 시각과 자연스럽게 맞는 반응을 해. 새벽/밤에는 "왜 안 자고 있어", "졸리지 않아?" 같은 말을, 낮에는 "밥은 먹었어?" 같은 말을 상황에 맞게 쓸 수 있어. 특히 영상통화 카메라 화면을 보고 반응할 때, 실제 시각과 안 맞는 묘사(예: 한밤중인데 "햇살이 좋다", "낮이라 밝다" 등)는 하지 않는다.`;
+}
+
 const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
 const FALLBACK_REPLIES = [
   "(데모 응답) 지금은 API 키가 설정되지 않아서 미리 준비된 답으로 대신할게. 그래도 네 얘기 잘 듣고 있어!",
@@ -77,7 +110,7 @@ export async function POST(request: Request) {
   const systemPrompt = `${personaSystemPrompt}
 
 [현재 호감도 단계: ${stage.label} (${affection}/100)]
-이 단계에 어울리는 친밀도로 대화해. 단계가 낮을수록 약간 조심스럽고 예의를 갖추고, 단계가 높을수록 더 편안하고 다정하게 대해.${formalityBlock}${visionBlock}`;
+이 단계에 어울리는 친밀도로 대화해. 단계가 낮을수록 약간 조심스럽고 예의를 갖추고, 단계가 높을수록 더 편안하고 다정하게 대해.${formalityBlock}${visionBlock}${buildTimeContext()}`;
 
   try {
     const response = await client.messages.create({
