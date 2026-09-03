@@ -1,6 +1,17 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+import { z } from "zod";
 import { NextResponse } from "next/server";
 import { getPersona, getAffectionStage, BASE_RULES, buildCustomPersonaBlock } from "@/lib/personas";
+
+const ChatResponseSchema = z.object({
+  reply: z.string(),
+  suggestions: z
+    .array(z.string())
+    .min(2)
+    .max(4)
+    .describe("사용자가 다음에 보낼 법한 짧은 답장 예시들, 사용자 본인의 말투를 반영"),
+});
 
 export const runtime = "nodejs";
 
@@ -87,7 +98,7 @@ export async function POST(request: Request) {
   if (!apiKey) {
     const reply =
       FALLBACK_REPLIES[Math.floor(Math.random() * FALLBACK_REPLIES.length)];
-    return NextResponse.json({ reply, affectionDelta: 1 });
+    return NextResponse.json({ reply, affectionDelta: 1, suggestions: [] });
   }
 
   const client = new Anthropic({ apiKey });
@@ -107,16 +118,24 @@ export async function POST(request: Request) {
 사용자가 영상통화 중 카메라를 켜서 지금 자기 모습을 보여줬어. 사진 속 모습이나 표정, 배경 등을 자연스럽게 언급하며 반응해줘. 외모를 과도하게 평가하거나 선정적으로 묘사하지 않고, 다정하고 편안한 반응으로 짧게 언급한다.`
     : "";
 
+  const suggestionsBlock = `
+
+[답장 예시 제공]
+reply를 만든 다음, suggestions 필드에 사용자가 다음에 보낼 법한 짧은 답장 예시를 3개 만들어. 반드시 지금까지 사용자가 대화에서 실제로 보여준 말투(반말/존댓말, 문장 길이, ㅋㅋ·이모지 사용 습관, 자주 쓰는 표현)를 그대로 흉내내서 사용자 본인이 쓸 법하게 만들고, 페르소나(너)의 방금 reply 내용에 자연스럽게 이어지는 대답이어야 해. 3개는 서로 다른 방향(예: 긍정적/공감하는 반응, 짧고 무심한 반응, 질문이나 화제 전환)으로 다양하게 만들고, 각각 한두 문장 이내로 짧게 써.`;
+
   const systemPrompt = `${personaSystemPrompt}
 
 [현재 호감도 단계: ${stage.label} (${affection}/100)]
-이 단계에 어울리는 친밀도로 대화해. 단계가 낮을수록 약간 조심스럽고 예의를 갖추고, 단계가 높을수록 더 편안하고 다정하게 대해.${formalityBlock}${visionBlock}${buildTimeContext()}`;
+이 단계에 어울리는 친밀도로 대화해. 단계가 낮을수록 약간 조심스럽고 예의를 갖추고, 단계가 높을수록 더 편안하고 다정하게 대해.${formalityBlock}${visionBlock}${buildTimeContext()}${suggestionsBlock}`;
 
   try {
-    const response = await client.messages.create({
+    const response = await client.messages.parse({
       model: MODEL,
-      max_tokens: 400,
+      max_tokens: 600,
       system: systemPrompt,
+      output_config: {
+        format: zodOutputFormat(ChatResponseSchema),
+      },
       messages: messages.map((m) => {
         const parsedImage = m.imageDataUrl ? parseDataUrl(m.imageDataUrl) : null;
         if (!parsedImage) {
@@ -139,13 +158,14 @@ export async function POST(request: Request) {
       }),
     });
 
-    const textBlock = response.content.find((block) => block.type === "text");
-    const reply = textBlock && "text" in textBlock ? textBlock.text : "음... 잠깐 할 말을 잃었어. 다시 말해줄래?";
+    const parsed = response.parsed_output;
+    const reply = parsed?.reply || "음... 잠깐 할 말을 잃었어. 다시 말해줄래?";
+    const suggestions = parsed?.suggestions ?? [];
 
     const lastUserMessage = messages[messages.length - 1]?.content ?? "";
     const affectionDelta = Math.min(3, Math.max(1, Math.ceil(lastUserMessage.length / 40)));
 
-    return NextResponse.json({ reply, affectionDelta });
+    return NextResponse.json({ reply, affectionDelta, suggestions });
   } catch (error) {
     console.error("Anthropic API error:", error);
     return NextResponse.json(
