@@ -14,9 +14,12 @@ function formatDuration(seconds: number) {
   return `${m}:${s}`;
 }
 
+const AVATAR_ROTATE_MS = 12000;
+
 export default function VideoCallScreen({
   persona,
   avatarUrl,
+  avatarUrls,
   isGeneratingAvatar,
   onGenerateAvatar,
   messages,
@@ -27,6 +30,7 @@ export default function VideoCallScreen({
 }: {
   persona: Persona;
   avatarUrl: string | null;
+  avatarUrls: string[];
   isGeneratingAvatar: boolean;
   onGenerateAvatar: () => void;
   messages: ChatMessage[];
@@ -40,9 +44,20 @@ export default function VideoCallScreen({
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [isConnecting, setIsConnecting] = useState(true);
+  const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Slowly cross-fade between this persona's generated photos instead of
+  // showing just one for the whole call.
+  useEffect(() => {
+    if (avatarUrls.length < 2) return;
+    const timer = setInterval(() => {
+      setActivePhotoIndex((i) => (i + 1) % avatarUrls.length);
+    }, AVATAR_ROTATE_MS);
+    return () => clearInterval(timer);
+  }, [avatarUrls.length]);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsConnecting(false), 1100);
@@ -126,12 +141,17 @@ export default function VideoCallScreen({
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black">
       <div className="absolute inset-0">
-        {avatarUrl ? (
-          <AvatarImage
-            persona={persona}
-            avatarUrl={avatarUrl}
-            className="h-full w-full animate-breathe"
-          />
+        {avatarUrls.length > 0 ? (
+          avatarUrls.map((url, i) => (
+            <AvatarImage
+              key={url}
+              persona={persona}
+              avatarUrl={url}
+              className={`absolute inset-0 h-full w-full animate-breathe transition-opacity duration-[1500ms] ${
+                i === activePhotoIndex % avatarUrls.length ? "opacity-100" : "opacity-0"
+              }`}
+            />
+          ))
         ) : (
           <div
             className={`h-full w-full bg-gradient-to-br ${persona.gradient} flex flex-col items-center justify-center gap-4`}

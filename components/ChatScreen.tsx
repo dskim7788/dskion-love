@@ -114,10 +114,12 @@ export default function ChatScreen({
       setPushBusy(false);
     }
   }
-  const { avatarUrl, isGenerating: isGeneratingAvatar, generate: generateAvatar } = useAvatar(
-    persona.id,
-    persona.isCustom ? persona.avatarPrompt : undefined
-  );
+  const {
+    avatarUrl,
+    avatarUrls,
+    isGenerating: isGeneratingAvatar,
+    generate: generateAvatar,
+  } = useAvatar(persona.id, persona.isCustom ? persona.avatarPrompt : undefined);
 
   useEffect(() => {
     saveConversation(state);
@@ -222,6 +224,7 @@ export default function ChatScreen({
       <VideoCallScreen
         persona={persona}
         avatarUrl={avatarUrl}
+        avatarUrls={avatarUrls}
         isGeneratingAvatar={isGeneratingAvatar}
         onGenerateAvatar={generateAvatar}
         messages={state.messages}

@@ -87,22 +87,34 @@ export function clearSelectedPersona() {
 }
 
 const AVATAR_PREFIX = "dskion-love:avatar:";
+const MAX_AVATARS_PER_PERSONA = 4;
 
-export function loadAvatarUrl(personaId: string): string | null {
-  if (!isBrowser()) return null;
-  return window.localStorage.getItem(AVATAR_PREFIX + personaId);
-}
-
-export function saveAvatarUrl(personaId: string, dataUrl: string) {
-  if (!isBrowser()) return;
+export function loadAvatarUrls(personaId: string): string[] {
+  if (!isBrowser()) return [];
+  const raw = window.localStorage.getItem(AVATAR_PREFIX + personaId);
+  if (!raw) return [];
   try {
-    window.localStorage.setItem(AVATAR_PREFIX + personaId, dataUrl);
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed;
   } catch {
-    // localStorage full — avatar just won't persist, generation still shown this session
+    // Pre-existing single-photo format: a bare "data:image/..." string
+    // rather than a JSON array. Treat it as a one-photo set.
   }
+  return raw.startsWith("data:") ? [raw] : [];
 }
 
-export function clearAvatarUrl(personaId: string) {
+export function addAvatarUrl(personaId: string, dataUrl: string): string[] {
+  if (!isBrowser()) return [dataUrl];
+  const next = [dataUrl, ...loadAvatarUrls(personaId)].slice(0, MAX_AVATARS_PER_PERSONA);
+  try {
+    window.localStorage.setItem(AVATAR_PREFIX + personaId, JSON.stringify(next));
+  } catch {
+    // localStorage full — the new photo just won't persist past this session
+  }
+  return next;
+}
+
+export function clearAvatarUrls(personaId: string) {
   if (!isBrowser()) return;
   window.localStorage.removeItem(AVATAR_PREFIX + personaId);
 }

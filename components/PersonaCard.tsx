@@ -42,7 +42,7 @@ export default function PersonaCard({
               generate();
             }}
             disabled={isGenerating}
-            title={avatarUrl ? "사진 다시 생성" : "AI 사진 생성"}
+            title={avatarUrl ? "새 사진 추가 생성" : "AI 사진 생성"}
             className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center text-[10px] shadow disabled:opacity-50"
           >
             {isGenerating ? "…" : "✨"}

@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { loadAvatarUrl, saveAvatarUrl } from "./storage";
+import { loadAvatarUrls, addAvatarUrl } from "./storage";
 
 export function useAvatar(personaId: string, customAvatarPrompt?: string) {
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarUrls, setAvatarUrls] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setAvatarUrl(loadAvatarUrl(personaId));
+    setAvatarUrls(loadAvatarUrls(personaId));
   }, [personaId]);
 
   const generate = useCallback(async () => {
@@ -28,8 +28,9 @@ export function useAvatar(personaId: string, customAvatarPrompt?: string) {
       if (!res.ok) {
         throw new Error(data.error || "이미지 생성에 실패했어");
       }
-      saveAvatarUrl(personaId, data.imageDataUrl);
-      setAvatarUrl(data.imageDataUrl);
+      // Each generation adds a new photo to this persona's rotating set
+      // (capped in storage.ts) rather than replacing the previous one.
+      setAvatarUrls(addAvatarUrl(personaId, data.imageDataUrl));
     } catch (err) {
       setError(err instanceof Error ? err.message : "알 수 없는 오류가 발생했어");
     } finally {
@@ -37,5 +38,14 @@ export function useAvatar(personaId: string, customAvatarPrompt?: string) {
     }
   }, [personaId, customAvatarPrompt]);
 
-  return { avatarUrl, isGenerating, error, generate };
+  return {
+    // Most-recently-generated photo, for spots that only show one (cards,
+    // headers, message bubbles).
+    avatarUrl: avatarUrls[0] ?? null,
+    // The full rotating set, for spots that cycle through them (video call).
+    avatarUrls,
+    isGenerating,
+    error,
+    generate,
+  };
 }
