@@ -1,5 +1,6 @@
 import type { Persona } from "./types";
 import { BASE_RULES, buildCustomPersonaBlock } from "./personas";
+import { withCopula } from "./korean";
 
 const CUSTOM_PERSONAS_KEY = "dskion-love:custom-personas";
 
@@ -36,7 +37,7 @@ export function buildCustomPersona(form: CreatePersonaForm): Persona {
     gradient: GRADIENTS[Math.floor(Math.random() * GRADIENTS.length)],
     description: personalityDescription || "직접 만든 나만의 AI 컴패니언이야.",
     speechStyle: "",
-    greeting: form.greeting.trim() || `안녕, 나는 ${name}이야! 잘 부탁해.`,
+    greeting: form.greeting.trim() || `안녕, 나는 ${withCopula(name)}! 잘 부탁해.`,
     avatarPrompt:
       form.appearanceDescription.trim().slice(0, 300) ||
       `friendly person named ${name}, warm expression, portrait photo`,
