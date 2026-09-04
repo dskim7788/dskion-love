@@ -58,10 +58,13 @@ export async function POST(request: Request) {
     const prediction = await predictionRes.json();
     if (!predictionRes.ok) {
       console.error("Replicate error:", prediction);
-      return NextResponse.json(
-        { error: prediction?.detail || "이미지 생성에 실패했어." },
-        { status: 502 }
-      );
+      let friendlyError = "이미지 생성에 실패했어. 잠시 후 다시 시도해줘.";
+      if (predictionRes.status === 429) {
+        friendlyError = "너무 빠르게 여러 번 눌러서 잠깐 제한됐어. 몇 초 후에 다시 눌러줘.";
+      } else if (predictionRes.status === 402) {
+        friendlyError = "사진 생성 서비스 크레딧이 부족해. 관리자에게 알려줘.";
+      }
+      return NextResponse.json({ error: friendlyError }, { status: 502 });
     }
 
     const output = prediction.output;
