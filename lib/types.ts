@@ -1,10 +1,13 @@
 export type ChatRole = "user" | "assistant";
 
+export const PHOTO_ONLY_PLACEHOLDER = "(사진을 보냈어)";
+
 export interface ChatMessage {
   id: string;
   role: ChatRole;
   content: string;
   createdAt: number;
+  imageUrl?: string;
 }
 
 export interface Persona {
