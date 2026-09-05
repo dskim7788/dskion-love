@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { ChatMessage, ConversationState, Persona } from "@/lib/types";
+import { PHOTO_ONLY_PLACEHOLDER } from "@/lib/types";
 import { loadConversation, saveConversation, clearConversation } from "@/lib/storage";
 import { useAvatar } from "@/lib/useAvatar";
 import { typingDelayMs } from "@/lib/format";
@@ -9,6 +10,7 @@ import { detectCasualConsent } from "@/lib/consent";
 import { isPushSupported, subscribeToPush, unsubscribeFromPush } from "@/lib/push";
 import { pushConversation } from "@/lib/sync";
 import { withSubjectParticle, withConjunctionParticle } from "@/lib/korean";
+import { downscaleImageFile } from "@/lib/image";
 import MessageBubble from "./MessageBubble";
 import AffectionBar from "./AffectionBar";
 import AvatarImage from "./AvatarImage";
@@ -84,13 +86,32 @@ export default function ChatScreen({
   const [isSending, setIsSending] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
   const [lastFailedText, setLastFailedText] = useState<string | null>(null);
+  const [lastFailedImageUrl, setLastFailedImageUrl] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [callMode, setCallMode] = useState(autoStartCall);
   const [pushSubscribed, setPushSubscribed] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
+  const [pendingImage, setPendingImage] = useState<string | null>(null);
+  const [isPickingImage, setIsPickingImage] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const hasScrolledOnceRef = useRef(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const pushFlagKey = `dskion-love:push-subscribed:${persona.id}`;
+
+  async function handlePickImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setIsPickingImage(true);
+    try {
+      const dataUrl = await downscaleImageFile(file);
+      setPendingImage(dataUrl);
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "이미지를 불러오지 못했어.");
+    } finally {
+      setIsPickingImage(false);
+    }
+  }
 
   useEffect(() => {
     setPushSubscribed(window.localStorage.getItem(pushFlagKey) === "1");
@@ -136,15 +157,20 @@ export default function ChatScreen({
     hasScrolledOnceRef.current = true;
   }, [state.messages, isSending]);
 
-  async function handleSend(overrideText?: string, imageDataUrl?: string) {
+  async function handleSend(
+    overrideText?: string,
+    imageDataUrl?: string,
+    options?: { persistImage?: boolean }
+  ) {
     const text = (overrideText ?? input).trim();
-    if (!text || isSending) return;
+    if ((!text && !imageDataUrl) || isSending) return;
 
     const userMessage: ChatMessage = {
       id: newId(),
       role: "user",
-      content: text,
+      content: text || PHOTO_ONLY_PLACEHOLDER,
       createdAt: Date.now(),
+      imageUrl: options?.persistImage ? imageDataUrl : undefined,
     };
 
     const nextMessages = [...state.messages, userMessage];
@@ -155,6 +181,7 @@ export default function ChatScreen({
     setIsSending(true);
     setErrorText(null);
     setLastFailedText(null);
+    setLastFailedImageUrl(null);
     setSuggestions([]);
 
     try {
@@ -203,14 +230,25 @@ export default function ChatScreen({
     } catch (err) {
       setErrorText(err instanceof Error ? err.message : "알 수 없는 오류가 발생했어");
       setLastFailedText(text);
+      setLastFailedImageUrl(options?.persistImage ? imageDataUrl ?? null : null);
     } finally {
       setIsSending(false);
     }
   }
 
   function handleRetry() {
-    if (!lastFailedText) return;
-    handleSend(lastFailedText);
+    if (lastFailedText === null) return;
+    handleSend(
+      lastFailedText,
+      lastFailedImageUrl ?? undefined,
+      lastFailedImageUrl ? { persistImage: true } : undefined
+    );
+  }
+
+  function handleSendClick() {
+    const imageToSend = pendingImage;
+    setPendingImage(null);
+    handleSend(undefined, imageToSend ?? undefined, imageToSend ? { persistImage: true } : undefined);
   }
 
   function handleReset() {
@@ -309,7 +347,7 @@ export default function ChatScreen({
         {errorText && (
           <div className="flex flex-col items-center gap-2 text-center">
             <p className="text-xs text-rose-500">{errorText}</p>
-            {lastFailedText && (
+            {lastFailedText !== null && (
               <button
                 onClick={handleRetry}
                 className="text-xs font-medium text-rose-500 hover:text-rose-600 underline underline-offset-2"
@@ -323,34 +361,70 @@ export default function ChatScreen({
 
       <div className="border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-4 py-3">
         {suggestions.length > 0 && !isSending && (
-          <div className="flex gap-2 overflow-x-auto pb-2 max-w-3xl mx-auto">
+          <div className="flex flex-wrap gap-1.5 pb-2 max-w-3xl mx-auto">
             {suggestions.map((suggestion, i) => (
               <button
                 key={i}
                 onClick={() => handleSend(suggestion)}
-                className="shrink-0 rounded-full border border-rose-200 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-300 text-xs px-3.5 py-2 hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-colors"
+                className="max-w-full truncate rounded-full border border-rose-200 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-300 text-[11px] px-2.5 py-1.5 hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-colors"
               >
                 {suggestion}
               </button>
             ))}
           </div>
         )}
+        {pendingImage && (
+          <div className="flex items-center gap-2 pb-2 max-w-3xl mx-auto">
+            <div className="relative">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={pendingImage}
+                alt="첨부할 사진"
+                className="h-14 w-14 rounded-xl object-cover border border-zinc-200 dark:border-zinc-700"
+              />
+              <button
+                onClick={() => setPendingImage(null)}
+                aria-label="사진 제거"
+                className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-zinc-900 text-white text-[10px] flex items-center justify-center"
+              >
+                ✕
+              </button>
+            </div>
+            <span className="text-xs text-zinc-400">사진을 함께 보낼게</span>
+          </div>
+        )}
         <div className="flex items-center gap-2 max-w-3xl mx-auto">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handlePickImage}
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isPickingImage}
+            className="shrink-0 h-10 w-10 rounded-full text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center transition-colors disabled:opacity-50"
+            aria-label="사진 첨부"
+            title="사진 첨부"
+          >
+            📷
+          </button>
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
-                handleSend();
+                handleSendClick();
               }
             }}
             placeholder={`${persona.name}에게 메시지 보내기...`}
-            className="flex-1 rounded-full border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-900 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-rose-300 dark:focus:ring-rose-500/50 text-zinc-900 dark:text-zinc-100"
+            className="min-w-0 flex-1 rounded-full border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-900 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-rose-300 dark:focus:ring-rose-500/50 text-zinc-900 dark:text-zinc-100"
           />
           <button
-            onClick={() => handleSend()}
-            disabled={isSending || !input.trim()}
+            onClick={handleSendClick}
+            disabled={isSending || (!input.trim() && !pendingImage)}
             className="shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 text-white flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
             aria-label="전송"
           >
